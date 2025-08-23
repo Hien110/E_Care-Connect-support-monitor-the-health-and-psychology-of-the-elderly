@@ -12,6 +12,8 @@ const UserController = {
     registerUser: async (req, res) => {
         try {
             const userData = req.body;
+            console.log(userData);
+
             const hashedPassword = await hashPassword(userData.password);
             const user = new User({ name: userData.name, phoneNumber: userData.phoneNumber, password: hashedPassword, avatar: avatarDefault });
             const savedUser = await user.save();

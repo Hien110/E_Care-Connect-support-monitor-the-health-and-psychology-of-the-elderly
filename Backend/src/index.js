@@ -14,8 +14,27 @@ dotenv.config();
 db.connect();
 
 // Cấu hình CORS đặt TRƯỚC routes
+const allowedOrigins = [
+  'http://localhost:5173',        // Web dev
+  'http://localhost:8081',        // Metro bundler
+  'http://192.168.1.*:*',         // IP local network (thay * bằng số cụ thể)
+  'http://10.0.2.2:3000',         // Android emulator to localhost
+  'http://localhost:3000',        // Localhost
+];
+
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: function (origin, callback) {
+    // Cho phép requests không có origin (như mobile apps, Postman)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.some(allowedOrigin => {
+      return origin.startsWith(allowedOrigin.replace('*', ''));
+    })) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
