@@ -8,12 +8,12 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
-    },
+    }, // Mã hóa số điện thoại
     password: {
       type: String,
       required: true,
       minlength: 6,
-    },
+    },  // Mã hóa
     role: {
       type: String,
       enum: ["elderly", "family", "supporter", "doctor", "admin"],
@@ -33,10 +33,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       lowercase: true,
-    },
+    },  // Mã hóa
     avatar: {
       type: String, // URL từ Cloudinary
-      default: null,
+      default: "https://cdn.sforum.vn/sforum/wp-content/uploads/2023/10/avatar-trang-4.jpg",
     },
     dateOfBirth: {
       type: Date,
@@ -44,34 +44,19 @@ const userSchema = new mongoose.Schema(
     address: {
       type: String,
       default: null,
-    },
+    }, // Mã hóa
     coordinates: {
       latitude: Number,
       longitude: Number,
-    },
-    isPhoneVerified: {
-      type: Boolean,
-      default: false,
-    },
-    isEmailVerified: {
-      type: Boolean,
-      default: false,
     },
     isActive: {
       type: Boolean,
       default: true,
     },
-    isApproved: {
-      type: Boolean,
-      default: false, // Cho supporter và doctor cần admin duyệt
-    },
     // Thông tin căn cước (được mã hóa)
     identityCard: {
-      cardNumber: String, // Mã hóa
-      fullName: String, // Không mã hóa
-      dateOfBirth: Date, // Mã hóa
-      address: String, // Mã hóa
-    },
+      type: Number,
+    }, // Mã  hóa
     // OTP cho xác thực
     otp: {
       code: String,

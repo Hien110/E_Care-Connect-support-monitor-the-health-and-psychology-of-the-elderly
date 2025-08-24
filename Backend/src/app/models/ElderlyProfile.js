@@ -1,37 +1,44 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const elderlyProfileSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    unique: true
-  },
-  // Thông tin sức khỏe
-  healthInfo: {
-    bloodType: {
-      type: String,
-      enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+const elderlyProfileSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
     },
-    chronicDiseases: [String], // Các bệnh nền
-  },
-  // Cài đặt sức khỏe
-  healthSettings: {
-    dailyHealthReminder: {
-      type: Boolean,
-      default: true
+    // Thông tin sức khỏe
+    healthInfo: {
+      bloodType: {
+        type: String,
+        enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+      },
+      chronicDiseases: [String], // Các bệnh nền
     },
-    medicationReminder: {
-      type: Boolean,
-      default: true
+    healthSettings: {
+      dailyHealthReminder: {
+        enabled: { type: Boolean, default: true },
+        time: { type: String, default: "08:00" }, // giờ mặc định 8h sáng
+      },
+      medicationReminder: {
+        enabled: { type: Boolean, default: true },
+        times: [{ type: String }], // danh sách giờ uống thuốc: ["06:30", "12:30", "20:00"]
+      },
+      exerciseReminder: {
+        enabled: { type: Boolean, default: false },
+        frequency: {
+          type: String,
+          enum: ["daily", "weekly"],
+          default: "daily",
+        },
+        time: { type: String, default: "18:00" }, // mặc định 6h chiều
+      },
     },
-    exerciseReminder: {
-      type: Boolean,
-      default: false
-    }
   },
-}, {
-  timestamps: true
-});
+  {
+    timestamps: true,
+  }
+);
 
-module.exports = mongoose.model('ElderlyProfile', elderlyProfileSchema);
+module.exports = mongoose.model("ElderlyProfile", elderlyProfileSchema);

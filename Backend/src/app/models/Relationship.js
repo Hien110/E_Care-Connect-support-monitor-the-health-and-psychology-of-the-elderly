@@ -56,15 +56,11 @@ const relationshipSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     }
+  }, // Chưa dùng
+  // Mức độ ưu tiên
+  priority: {
+    type: Number,
   },
-  // Mức độ quan tâm/chăm sóc
-  careLevel: {
-    type: String,
-    enum: ['primary', 'secondary', 'occasional', 'emergency_only'],
-    default: 'secondary'
-  },
-  // Ghi chú về mối quan hệ
-  relationshipNotes: String
 }, {
   timestamps: true
 });
