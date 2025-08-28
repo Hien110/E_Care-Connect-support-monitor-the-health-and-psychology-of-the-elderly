@@ -1,10 +1,15 @@
-const express = require("express")
+const express = require("express");
 
-const router = express.Router()
+const router = express.Router();
 
-const UserController = require("../app/controllers/userController")
+const UserController = require("../app/controllers/userController");
+const authenticateToken = require("../app/middlewares/authMiddleware");
 
-// Đăng kí người dùng
-router.post("/registerUser", UserController.registerUser)
 
-module.exports = router
+router.post("/registerUser", UserController.registerUser);
+router.post("/loginUser", UserController.loginUser);
+
+router.use(authenticateToken);
+router.get("/getUserInfo",   UserController.getUserInfo );
+
+module.exports = router;
