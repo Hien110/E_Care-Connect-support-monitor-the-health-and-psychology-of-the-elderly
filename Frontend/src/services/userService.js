@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://ecarebackend-cvfvhjfsc9h5f2fw.southeastasia-01.azurewebsites.net//api/users';
+const API_URL = 'http://localhost:3000/api/users';
 
 const userService = {
     registerUser: async (userData) => {
