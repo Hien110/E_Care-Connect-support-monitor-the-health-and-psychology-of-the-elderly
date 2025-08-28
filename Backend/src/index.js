@@ -6,7 +6,6 @@ const cors = require('cors');
 const app = express();
 const route = require('./routes');
 const db = require('./config/db');
-
 // Load biến môi trường
 dotenv.config();
 
@@ -27,7 +26,6 @@ app.use(morgan('combined'));
 // Mailer
 const mailer = require('./config/mailer/mailer');
 app.set('transporter', mailer);
-
 // Khởi tạo routes
 route(app);
 

@@ -1,20 +1,23 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+
 import HomeScreen from '../screens/Site/HomeScreen';
-import RegisterScreen from '../screens/Auth/RegisterScreen';
-// Import other screens later
+import RegistersScreen from '../screens/RegistersScreen';
 
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Register">
+      <Stack.Navigator
+        initialRouteName="Registers"
+        screenOptions={{ headerShown: true }}
+      >
         <Stack.Screen
-          name="Register"
-          component={RegisterScreen}
-          options={{ title: 'Đăng Ký' }}
+          name="Registers"
+          component={RegistersScreen}
+          options={{ title: 'Đăng Ký Cho Người Già' }}
         />
         <Stack.Screen
           name="Home"

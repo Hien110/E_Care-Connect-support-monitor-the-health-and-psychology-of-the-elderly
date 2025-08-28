@@ -56,7 +56,78 @@ export const userService = {
     } catch (error) {
       throw error.response?.data || error.message;
     }
+  },
+    // B1: Gửi OTP
+  sendOTP: async ({ phoneNumber, role }) => {
+    try {
+      const response = await api.post('/users/send-otp', { phoneNumber, role });
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data.message || error.message
+      };
+    }
+  },
+
+  // B2: Xác thực OTP
+  verifyOTP: async ({ phoneNumber, otp }) => {
+    try {
+      const response = await api.post('/users/verify-otp', { phoneNumber, otp });
+      return {
+        success: true,
+        message: response.data.message
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data.message || error.message
+      };
+    }
+  },
+
+  // B3: Nhập CCCD
+  setIdentity: async ({ phoneNumber, identityCard }) => {
+    try {
+      const response = await api.put('/users/set-identity', { phoneNumber, identityCard });
+      return {
+        success: true,
+        message: response.data.message
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data.message || error.message
+      };
+    }
+  },
+
+  // B4: Hoàn tất hồ sơ
+completeProfile: async ({ fullName, dateOfBirth, gender, password }) => {
+  try {
+    const response = await api.put("/users/complete-profile", {
+      fullName,
+      dateOfBirth,
+      gender,
+      password
+    });
+
+    return {
+      success: true,
+      data: response.data.data,
+      message: response.data.message,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message,
+    };
   }
+}
 };
 
 export default userService;
