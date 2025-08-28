@@ -106,6 +106,17 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def appName = "E_Care" // tên app bạn muốn
+            def buildType = variant.buildType.name
+            def versionName = variant.versionName
+            def versionCode = variant.versionCode
+
+            outputFileName = "${appName}-${buildType}-v${versionName}(${versionCode}).apk"
+        }
+    }
 }
 
 dependencies {
