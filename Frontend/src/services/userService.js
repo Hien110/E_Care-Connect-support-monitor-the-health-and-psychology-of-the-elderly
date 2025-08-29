@@ -42,31 +42,38 @@ const userService = {
 
 
     loginUser: async ({ phoneNumber, password }) => {
-    try {
-      const res = await api.post('/loginUser', { phoneNumber, password });
+  try {
+    const res = await api.post('/loginUser', { phoneNumber, password });
 
-      const token = res.data?.token;
-      const user = res.data?.user;
+    const token = res.data?.token;
+    const user = res.data?.user;
 
-      // Lưu token + set header cho các request sau
-      setAuthToken(token);
+    if (token) {
+      // Lưu token vào sessionStorage
+      sessionStorage.setItem("ecare_token", token);
 
-      return {
-        success: true,
-        token,
-        user,
-        message: res.data?.message || 'Đăng nhập thành công',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        token: null,
-        user: null,
-        message:
-          error?.response?.data?.message || 'Đăng nhập thất bại',
-      };
+      // Nếu muốn lưu thông tin user tạm thời
+      sessionStorage.setItem("ecare_user", JSON.stringify(user));
+
+      // Set header mặc định cho axios
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
-  },
+
+    return {
+      success: true,
+      token,
+      user,
+      message: res.data?.message || "Đăng nhập thành công",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      token: null,
+      user: null,
+      message: error?.response?.data?.message || "Đăng nhập thất bại",
+    };
+  }
+},
 
   // Lấy thông tin user hiện tại (cần token)
   getUserInfo: async () => {

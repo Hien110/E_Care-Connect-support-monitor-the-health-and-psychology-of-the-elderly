@@ -27,7 +27,7 @@ export default function AdminLogin() {
         else sessionStorage.setItem("token", res.token)
         localStorage.setItem("currentUser", JSON.stringify(res.user || {}))
         setSuccess(res.message || "Đăng nhập thành công")
-        // window.location.href = "/admin"
+        window.location.href = "/admin/dashboard"
       }
     } catch (err) {
       console.error(err)

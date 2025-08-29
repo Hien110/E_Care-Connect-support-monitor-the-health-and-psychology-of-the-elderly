@@ -75,7 +75,6 @@ const UserController = {
           isActive: user.isActive,
         },
         process.env.JWT_SECRET_KEY,
-        { expiresIn: "7d" }
       );
 
       const safeUser = user.toObject();
