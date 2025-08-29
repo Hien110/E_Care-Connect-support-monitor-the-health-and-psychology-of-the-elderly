@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon --inspect src/index.js",
     "start": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha \"test/**/*.test.js\" --timeout 10000"
   },
   "keywords": [],
   "author": "",
@@ -35,5 +35,9 @@
     "passport-google-oauth20": "^2.0.0",
     "react-markdown": "^10.1.0",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "mocha": "^11.7.1",
+    "supertest": "^7.1.4"
   }
 }
