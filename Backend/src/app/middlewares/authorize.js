@@ -15,5 +15,5 @@ const checkUserStatus = (req, res, next) => {
   }
   next();
 };
-
+    
 module.exports = { authorize, checkUserStatus };
