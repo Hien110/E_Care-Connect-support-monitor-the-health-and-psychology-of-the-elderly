@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       minlength: 6,
+      select: false
     },  // Mã hóa
     role: {
       type: String,
@@ -68,5 +69,9 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+userSchema.methods.comparePassword = function (plain) {
+  const bcrypt = require('bcryptjs');
+  return bcrypt.compare(plain, this.password);
+};
 
 module.exports = mongoose.model("User", userSchema);

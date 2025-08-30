@@ -3,6 +3,7 @@ const { sendSMS } = require("../../utils/smsClient");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const hashPassword = require("../../utils/hashPassword");
 
 const avatarDefault =
   "https://i.pinimg.com/736x/c6/e5/65/c6e56503cfdd87da299f72dc416023d4.jpg";
@@ -20,10 +21,19 @@ function normalizeVNPhone(phone) {
 }
 
 const UserController = {
+  // Đăng ký người dùng
   registerUser: async (req, res) => {
     try {
-      const userData = req.body;
-      console.log(userData);
+      const { fullName, phoneNumber, password, role, gender, email } = req.body;
+
+      if (!fullName || !phoneNumber || !password || !role || !gender) {
+        return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
+      }
+
+      const existed = await User.findOne({ phoneNumber });
+      if (existed) {
+        return res.status(409).json({ message: "Số điện thoại đã tồn tại" });
+      }
 
       const hashedPassword = await hashPassword(userData.password);
       const user = new User({
@@ -36,26 +46,6 @@ const UserController = {
       res.status(201).json({ data: savedUser, message: "Đăng ký thành công" });
     } catch (error) {
       res.status(500).json({ message: "Đã xảy ra lỗi" });
-    }
-  },
-  // (Optional) quick register (existing)
-  register: async (req, res) => {
-    try {
-      const userData = req.body;
-      const hashedPassword = await bcrypt.hash(userData.password, 12);
-      const user = new User({
-        name: userData.name,
-        phoneNumber: userData.phoneNumber,
-        password: hashedPassword,
-        avatar: avatarDefault,
-      });
-      const savedUser = await user.save();
-      return res
-        .status(201)
-        .json({ data: savedUser, message: "Đăng ký thành công" });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: "Đã xảy ra lỗi" });
     }
   },
 
@@ -262,6 +252,60 @@ const UserController = {
     return res.status(500).json({ success: false, message: err.message });
   }
 },
+
+    
+  // Đăng nhập
+  loginUser: async (req, res) => {
+    try {
+      const { phoneNumber, password } = req.body;
+
+      const user = await User.findOne({ phoneNumber }).select("+password");
+      if (!user)
+        return res.status(404).json({ message: "Người dùng không tồn tại" });
+
+      const isPasswordValid = await user.comparePassword(password);
+      if (!isPasswordValid)
+        return res.status(401).json({ message: "Mật khẩu không đúng" });
+
+      const token = jwt.sign(
+        {
+          userId: user._id,
+          phoneNumber: user.phoneNumber,
+          role: user.role,
+          isActive: user.isActive,
+        },
+        process.env.JWT_SECRET_KEY,
+      );
+
+      const safeUser = user.toObject();
+      delete safeUser.password;
+
+      res.status(200).json({
+        token,
+        user: safeUser,
+        message: "Đăng nhập thành công",
+      });
+    } catch (error) {
+      console.error("loginUser error:", error);
+      res.status(500).json({ message: "Đã xảy ra lỗi" });
+    }
+  },
+
+  // Lấy thông tin người dùng
+  getUserInfo: async (req, res) => {
+    try {
+      const userId = req.user.userId;
+      const user = await User.findById(userId).select("-password");
+
+      if (!user) {
+        return res.status(404).json({ message: "Người dùng không tồn tại" });
+      }
+
+      res.status(200).json({ data: user });
+    } catch (error) {
+      res.status(500).json({ message: "Đã xảy ra lỗi" });
+    }
+  },
 };
 
 module.exports = UserController;

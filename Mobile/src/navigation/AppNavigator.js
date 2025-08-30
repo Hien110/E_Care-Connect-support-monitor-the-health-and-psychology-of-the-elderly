@@ -4,25 +4,31 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 import HomeScreen from '../screens/Site/HomeScreen';
 import RegistersScreen from '../screens/RegistersScreen';
+import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
+import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
+import LoginScreen from '../screens/Auth/LoginScreen';
+// import other screens as needed
 
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Registers"
-        screenOptions={{ headerShown: true }}
-      >
+      <Stack.Navigator initialRouteName="Registers">
+        <Stack.Screen
+          name="LOGIN"
+          component={LoginScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="Registers"
           component={RegistersScreen}
           options={{ title: 'Đăng Ký Cho Người Già' }}
         />
         <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{ title: 'Trang Chủ' }}
+          name="VerifySMS"
+          component={VerifySMSScreen}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>
