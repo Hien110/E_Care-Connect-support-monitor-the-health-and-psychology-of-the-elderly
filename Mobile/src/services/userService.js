@@ -121,7 +121,57 @@ completeProfile: async ({ fullName, dateOfBirth, gender, password }) => {
       message: error.response?.data?.message || error.message,
     };
   }
-}
+},
+
+  // Forgot Password - Gửi OTP
+  sendForgotPasswordOTP: async ({ phoneNumber }) => {
+    try {
+      const response = await api.post('/users/forgot-password/send-otp', { phoneNumber });
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data.message || error.message
+      };
+    }
+  },
+
+  // Forgot Password - Xác thực OTP
+  verifyForgotPasswordOTP: async ({ phoneNumber, otp }) => {
+    try {
+      const response = await api.post('/users/forgot-password/verify-otp', { phoneNumber, otp });
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data.message || error.message
+      };
+    }
+  },
+
+  // Forgot Password - Đặt lại mật khẩu
+  resetPassword: async ({ resetToken, newPassword }) => {
+    try {
+      const response = await api.post('/users/forgot-password/reset', { resetToken, newPassword });
+      return {
+        success: true,
+        message: response.data.message
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data.message || error.message
+      };
+    }
+  }
 }
 
 

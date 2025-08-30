@@ -7,16 +7,48 @@ import {
   StyleSheet,
   Image,
   Dimensions,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { userService } from '../../services/userService';
 
 const { height } = Dimensions.get('window');
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const [phone, setPhone] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
 
-  const handleSendOTP = () => {
-    navigation.navigate('VerifySMS');
+  const handleSendOTP = async () => {
+    if (!phone.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập số điện thoại');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await userService.sendForgotPasswordOTP({ 
+        phoneNumber: phone.trim() 
+      });
+      
+      if (result.success) {
+        Alert.alert('Thành công', result.message, [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('VerifySMS', { 
+              phoneNumber: phone.trim(),
+              isResetPassword: true 
+            })
+          }
+        ]);
+      } else {
+        Alert.alert('Lỗi', result.message);
+      }
+    } catch (error) {
+      Alert.alert('Lỗi', 'Có lỗi xảy ra, vui lòng thử lại');
+      console.error('Send OTP error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,8 +93,14 @@ const ForgotPasswordScreen = ({ navigation }) => {
         />
 
         {/* Button gửi OTP */}
-        <TouchableOpacity style={styles.button} onPress={handleSendOTP}>
-          <Text style={styles.buttonText}>Gửi mã OTP</Text>
+        <TouchableOpacity 
+          style={[styles.button, loading && styles.buttonDisabled]} 
+          onPress={handleSendOTP}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? 'Đang gửi...' : 'Gửi mã OTP'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -146,5 +184,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
   },
 });

@@ -306,6 +306,166 @@ const UserController = {
       res.status(500).json({ message: "Đã xảy ra lỗi" });
     }
   },
+
+  // Gửi OTP cho quên mật khẩu
+  sendForgotPasswordOTP: async (req, res) => {
+    try {
+      const { phoneNumber } = req.body;
+      if (!phoneNumber) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Thiếu số điện thoại" 
+        });
+      }
+
+      // Kiểm tra user có tồn tại và đã active không
+      const user = await User.findOne({ phoneNumber, isActive: true });
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Số điện thoại không tồn tại trong hệ thống" 
+        });
+      }
+
+      const e164 = normalizeVNPhone(phoneNumber);
+      const code = generate4Digits();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 phút
+
+      // Cập nhật OTP cho user
+      user.otp = { code, expiresAt };
+      await user.save({ validateBeforeSave: false });
+
+      const message = `Mã xác nhận đặt lại mật khẩu của bạn là: ${code}`;
+      const smsRes = await sendSMS({ to: e164, message });
+      if (!smsRes.success) {
+        return res.status(500).json({ 
+          success: false, 
+          message: "Gửi SMS thất bại: " + smsRes.message 
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Đã gửi mã OTP đến số điện thoại của bạn",
+        data: { phoneNumber, expiresAt },
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ 
+        success: false, 
+        message: err.message 
+      });
+    }
+  },
+
+  // Xác thực OTP cho quên mật khẩu
+  verifyForgotPasswordOTP: async (req, res) => {
+    try {
+      const { phoneNumber, otp } = req.body;
+      if (!phoneNumber || !otp) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Thiếu số điện thoại hoặc mã OTP" 
+        });
+      }
+
+      const user = await User.findOne({ phoneNumber, isActive: true });
+      if (!user || !user.otp?.code) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Không tìm thấy mã OTP" 
+        });
+      }
+
+      if (user.otp.expiresAt < new Date()) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Mã OTP đã hết hạn" 
+        });
+      }
+
+      if (user.otp.code !== otp) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Mã OTP không đúng" 
+        });
+      }
+
+      // Tạo token tạm thời để đặt lại mật khẩu (có thời hạn ngắn)
+      const resetToken = jwt.sign(
+        { userId: user._id, phoneNumber: user.phoneNumber, purpose: 'reset-password' },
+        process.env.JWT_SECRET_KEY || "secret",
+        { expiresIn: "10m" } // 10 phút
+      );
+
+      // Clear OTP sau khi xác thực thành công
+      user.otp = { code: null, expiresAt: null };
+      await user.save({ validateBeforeSave: false });
+
+      return res.status(200).json({ 
+        success: true, 
+        message: "Xác thực OTP thành công",
+        data: { resetToken }
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ 
+        success: false, 
+        message: err.message 
+      });
+    }
+  },
+
+  // Đặt lại mật khẩu
+  resetPassword: async (req, res) => {
+    try {
+      const { resetToken, newPassword } = req.body;
+      if (!resetToken || !newPassword) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Thiếu token đặt lại hoặc mật khẩu mới" 
+        });
+      }
+
+      // Xác thực reset token
+      let decoded;
+      try {
+        decoded = jwt.verify(resetToken, process.env.JWT_SECRET_KEY || "secret");
+        if (decoded.purpose !== 'reset-password') {
+          throw new Error('Invalid token purpose');
+        }
+      } catch (jwtError) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "Token không hợp lệ hoặc đã hết hạn" 
+        });
+      }
+
+      const user = await User.findById(decoded.userId);
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Người dùng không tồn tại" 
+        });
+      }
+
+      // Hash mật khẩu mới và cập nhật
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      user.password = hashedPassword;
+      await user.save();
+
+      return res.status(200).json({ 
+        success: true, 
+        message: "Đặt lại mật khẩu thành công" 
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ 
+        success: false, 
+        message: err.message 
+      });
+    }
+  },
 };
 
 module.exports = UserController;
