@@ -14,6 +14,11 @@ router.post("/verify-otp", UserController.verifyOTP);
 router.put("/set-identity", UserController.setIdentity);
 router.put("/complete-profile", UserController.completeProfile);
 
+// Forgot password routes
+router.post("/forgot-password/send-otp", UserController.sendForgotPasswordOTP);
+router.post("/forgot-password/verify-otp", UserController.verifyForgotPasswordOTP);
+router.post("/forgot-password/reset", UserController.resetPassword);
+
 router.use(authenticateToken);
 router.get("/getUserInfo", UserController.getUserInfo);
 
