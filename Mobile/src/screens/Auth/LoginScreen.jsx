@@ -64,7 +64,9 @@ export default function LoginScreen() {
     }
     try {
       setLoading(true)
-      const res = await userService.loginUser({ phoneNumber, password, rememberMe })
+      const res = await userService.loginUser({ phoneNumber, password })
+      console.log("Login Response: ", res);
+
       if (!res.success) {
         setError(res.message || "Đăng nhập thất bại")
         return
@@ -133,10 +135,6 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.rowBetween}>
-            <TouchableOpacity onPress={() => setRememberMe((v) => !v)} style={styles.checkbox}>
-                {rememberMe && <Text style={styles.checkmark}>✔</Text>}
-              </TouchableOpacity>
-              <Text style={styles.small}>Ghi nhớ đăng nhập</Text>
 
             <TouchableOpacity onPress={() => nav.navigate("ForgotPassword")}>
               <Text style={[styles.small, { color: "#2563eb", fontWeight: "600" }]}>Quên mật khẩu?</Text>
