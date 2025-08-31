@@ -8,11 +8,14 @@ const authenticateToken = require("../app/middlewares/authMiddleware");
 
 router.post("/registerUser", UserController.registerUser);
 router.post("/loginUser", UserController.loginUser);
-
+//gửi OTP
 router.post("/send-otp", UserController.sendOTP);
+//xác thực OTP
 router.post("/verify-otp", UserController.verifyOTP);
+//nhập CCCD
 router.put("/set-identity", UserController.setIdentity);
-router.put("/complete-profile", UserController.completeProfile);
+//hoàn tất hồ sơ
+router.put("/complete-Profile", UserController.completeProfile);
 
 router.use(authenticateToken);
 router.get("/getUserInfo", UserController.getUserInfo);

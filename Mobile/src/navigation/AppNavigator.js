@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
 import HomeScreen from '../screens/Site/HomeScreen';
-import RegistersScreen from '../screens/RegistersScreen';
+import RegistersScreen from '../screens/Auth/RegistersScreen';
 import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
 import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
@@ -23,7 +23,7 @@ const AppNavigator = () => {
         <Stack.Screen
           name="Registers"
           component={RegistersScreen}
-          options={{ title: 'Đăng Ký Cho Người Già' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="VerifySMS"
