@@ -121,7 +121,80 @@ completeProfile: async ({ fullName, dateOfBirth, gender, password }) => {
       message: error.response?.data?.message || error.message,
     };
   }
-}
+},
+// Đăng nhập
+ loginUser : async ({ phoneNumber, password}) => {
+  console.log(api);
+
+  try {
+    const res = await api.post("/users/loginUser", { phoneNumber, password });
+
+    const token = res.data?.token || res.data?.data?.token;
+    const user = res.data?.user || res.data?.data?.user;
+
+    return {
+      success: true,
+      token,
+      user,
+      message: res.data?.message || "Đăng nhập thành công",
+    };
+  } catch (error) {
+    // Kiểm tra xem có lỗi mạng hoặc không có phản hồi từ server
+    console.log(error, "XIn chào hello");
+
+    if (!error?.response) {
+      console.error("Login Error: No response from server", error);
+      return {
+        success: false,
+        token: null,
+        user: null,
+        message: "Không thể kết nối với máy chủ. Vui lòng thử lại sau.",
+        error: error
+      };
+    }
+
+    // Lỗi từ server (ví dụ: sai mật khẩu, tài khoản không tồn tại)
+    const errorMessage = error?.response?.data?.message || "Đăng nhập thất bại";
+
+    // console.error("Login Error:", errorMessage);
+
+    return {
+      success: false,
+      token: null,
+      user: null,
+      message: errorMessage,
+    };
+  }
+},
+
+// Lấy thông tin user
+ getUserInfo : async () => {
+  try {
+    const headers = await authHeader();
+    if (!headers.Authorization) {
+      return { success: false, data: null, message: "Chưa đăng nhập" };
+    }
+
+    const res = await api.get("/users/getUserInfo", { headers });
+
+    if (res.data?.data) {
+      // Cập nhật lại user
+      const current = await getUser();
+      const isRemember =
+        (RNStorage && (await RNStorage.getItem("ecare_user"))) ||
+        (typeof localStorage !== "undefined" && localStorage.getItem("currentUser"));
+      await setUser(res.data.data, !!isRemember);
+    }
+
+    return { success: true, data: res.data?.data };
+  } catch (error) {
+    return {
+      success: false,
+      data: null,
+      message: error?.response?.data?.message || "Lấy thông tin người dùng thất bại",
+    };
+  }
+},
 }
 
 

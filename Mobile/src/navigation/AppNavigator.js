@@ -4,8 +4,11 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 import HomeScreen from '../screens/Site/HomeScreen';
 import RegistersScreen from '../screens/Auth/RegistersScreen';
+import HomeScreen from '../screens/Site/HomeScreen.js';
+import RegistersScreen from '../screens/RegistersScreen';
 import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
 import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
+import ResetPasswordScreen from '../screens/Auth/ResetPasswordScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
 // import other screens as needed
 
@@ -14,7 +17,7 @@ const Stack = createStackNavigator();
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Registers">
+      <Stack.Navigator initialRouteName="LOGIN">
         <Stack.Screen
           name="LOGIN"
           component={LoginScreen}
@@ -26,8 +29,18 @@ const AppNavigator = () => {
           options={{ headerShown: false }}
         />
         <Stack.Screen
+          name="ForgotPassword"
+          component={ForgotPasswordScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="VerifySMS"
           component={VerifySMSScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ResetPassword"
+          component={ResetPasswordScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

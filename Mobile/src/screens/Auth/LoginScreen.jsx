@@ -11,14 +11,13 @@ import {
   Platform,
   Animated,
   Easing,
+  ScrollView,
+  SafeAreaView,
 } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useNavigation } from "@react-navigation/native"
 
-// asset logo
-import logo from "../../assets/logoE_Care.png"
-
-// service
+import logo from "../../assets/logoBrand.png"
 import userService from "../../services/userService"
 
 export default function LoginScreen() {
@@ -31,7 +30,6 @@ export default function LoginScreen() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
 
-  // chỉ animate logo
   const fadeIn = useRef(new Animated.Value(0)).current
   const floatY = useRef(new Animated.Value(0)).current
 
@@ -58,25 +56,34 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setError("")
     setSuccess("")
+
     if (!phoneNumber || !password) {
       setError("Vui lòng nhập đủ số điện thoại và mật khẩu.")
       return
     }
+
     try {
       setLoading(true)
       const res = await userService.loginUser({ phoneNumber, password })
-      console.log("Login Response: ", res);
+      console.log("Login Response: ", res)
 
       if (!res.success) {
         setError(res.message || "Đăng nhập thất bại")
         return
       }
-      if (res.token) await AsyncStorage.setItem("ecare_token", res.token)
-      if (res.user) await AsyncStorage.setItem("ecare_user", JSON.stringify(res.user))
+
+      // Lưu token & user nếu rememberMe = true
+      if (res.token && rememberMe) {
+        await AsyncStorage.setItem("ecare_token", res.token)
+      }
+      if (res.user && rememberMe) {
+        await AsyncStorage.setItem("ecare_user", JSON.stringify(res.user))
+      }
 
       setSuccess("Đăng nhập thành công")
       nav.reset({ index: 0, routes: [{ name: "Home" }] })
     } catch (e) {
+      console.error("Login error: ", e)
       setError("Có lỗi xảy ra. Thử lại sau.")
     } finally {
       setLoading(false)
@@ -84,97 +91,133 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
-      <View style={styles.inner}>
-        {/* Logo + brand */}
-        <View style={styles.logoWrap}>
-          {/* CHỈ logo có hiệu ứng */}
-          <Animated.View style={{ opacity: fadeIn, transform: [{ translateY: floatY }] }}>
-            <Image source={logo} style={styles.logo} resizeMode="contain" />
-          </Animated.View>
-
-          {/* brand + tagline không animate */}
-          <Text style={styles.brand}>E-CARE</Text>
-          <Text style={styles.tagline}>Chăm sóc sức khỏe thông minh</Text>
-        </View>
-
-        {/* Card: bỏ hiệu ứng */}
-        <View style={styles.card}>
-          <Text style={styles.title}>Đăng nhập</Text>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Số điện thoại</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Số điện thoại"
-              keyboardType="phone-pad"
-              autoCapitalize="none"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-            />
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator
+          keyboardShouldPersistTaps="handled"
+          contentInsetAdjustmentBehavior="automatic"
+        >
+          <View style={styles.logoWrap}>
+            <Animated.View style={{ opacity: fadeIn, transform: [{ translateY: floatY }] }}>
+              <Image source={logo} style={styles.logo} resizeMode="contain" />
+            </Animated.View>
+            <Text style={styles.brand}>E-CARE</Text>
+            <Text style={styles.tagline}>Chăm sóc sức khỏe thông minh</Text>
           </View>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Mật khẩu</Text>
-            <View style={{ position: "relative" }}>
+          <View style={styles.card}>
+            <Text style={styles.title}>Đăng nhập</Text>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Số điện thoại</Text>
               <TextInput
-                style={[styles.input, { paddingRight: 44 }]}
-                placeholder="••••••"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={setPassword}
+                style={styles.input}
+                placeholder="Số điện thoại"
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                returnKeyType="next"
               />
-              <TouchableOpacity
-                onPress={() => setShowPassword((v) => !v)}
-                style={styles.eyeBtn}
-                accessibilityLabel="toggle-password-visibility"
-              >
-                <Text style={{ color: "#64748b", fontWeight: "600" }}>{showPassword ? "Ẩn" : "Hiện"}</Text>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Mật khẩu</Text>
+              <View style={{ position: "relative" }}>
+                <TextInput
+                  style={[styles.input, { paddingRight: 44 }]}
+                  placeholder="••••••"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  returnKeyType="done"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword((v) => !v)}
+                  style={styles.eyeBtn}
+                  accessibilityLabel="toggle-password-visibility"
+                >
+                  <Text style={{ color: "#64748b", fontWeight: "600" }}>{showPassword ? "Ẩn" : "Hiện"}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.rowBetween}>
+              <TouchableOpacity onPress={() => nav.navigate("ForgotPassword")}>
+                <Text style={[styles.small, { color: "#2563eb", fontWeight: "600" }]}>Quên mật khẩu?</Text>
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.rowBetween}>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => setRememberMe((prev) => !prev)}
+              >
+                <View
+                  style={[
+                    styles.checkbox,
+                    rememberMe && { backgroundColor: "#4f46e5", borderColor: "#4f46e5" },
+                  ]}
+                />
+                <Text style={[styles.small, { marginLeft: 6 }]}>Ghi nhớ đăng nhập</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => nav.navigate("ForgotPassword")}>
+                <Text style={[styles.small, { color: "#2563eb", fontWeight: "600" }]}>
+                  Quên mật khẩu?
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {!!error && <Text style={styles.error}>{error}</Text>}
+            {!!success && <Text style={styles.success}>{success}</Text>}
+
+            <TouchableOpacity
+              onPress={handleLogin}
+              disabled={loading}
+              style={[styles.loginBtn, loading && { opacity: 0.7 }]}
+              activeOpacity={0.9}
+            >
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginText}>Đăng nhập</Text>}
+            </TouchableOpacity>
+
+            <View style={{ alignItems: "center", marginTop: 16 }}>
+              <Text style={styles.small}>
+                Bạn chưa có tài khoản?{" "}
+                <Text onPress={() => nav.navigate("Registers")} style={{ color: "#2563eb", fontWeight: "700" }}>
+                  Đăng ký ngay
+                </Text>
+              </Text>
             </View>
           </View>
 
-          <View style={styles.rowBetween}>
-
-            <TouchableOpacity onPress={() => nav.navigate("ForgotPassword")}>
-              <Text style={[styles.small, { color: "#2563eb", fontWeight: "600" }]}>Quên mật khẩu?</Text>
-            </TouchableOpacity>
-          </View>
-
-          {!!error && <Text style={styles.error}>{error}</Text>}
-          {!!success && <Text style={styles.success}>{success}</Text>}
-
-          <TouchableOpacity
-            onPress={handleLogin}
-            disabled={loading}
-            style={[styles.loginBtn, loading && { opacity: 0.7 }]}
-            activeOpacity={0.9}
-          >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginText}>Đăng nhập</Text>}
-          </TouchableOpacity>
-
-          <View style={{ alignItems: "center", marginTop: 16 }}>
-            <Text style={styles.small}>
-              Bạn chưa có tài khoản?{" "}
-              <Text onPress={() => nav.navigate("Registers")} style={{ color: "#2563eb", fontWeight: "700" }}>
-                Đăng ký ngay
-              </Text>
-            </Text>
-          </View>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+          {/* Spacer nhỏ để tránh bị dính cạnh dưới khi cuộn */}
+          <View style={{ height: 24 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#eef2ff" },
-  inner: { flex: 1, padding: 20, justifyContent: "center" },
+
+  // Giúp nội dung chiếm đủ chiều cao để ScrollView hoạt động mượt mà
+  scrollContent: {
+    flexGrow: 1,
+    padding: 20,
+    justifyContent: "center",
+  },
 
   logoWrap: { alignItems: "center", marginBottom: 18 },
-
-  logo: { width: 140, height: 140, borderRadius: 28 },
-
+  logo: { width: 120, height: 120, borderRadius: 28 },
   brand: { marginTop: 2, fontSize: 28, fontWeight: "800", color: "#0f172a" },
   tagline: { marginTop: 2, color: "#64748b" },
 
@@ -205,23 +248,6 @@ const styles = StyleSheet.create({
 
   rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 2 },
   row: { flexDirection: "row", alignItems: "center" },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: "#94a3b8",
-    marginRight: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-  checkmark: {
-    fontSize: 14,
-    color: "#4f46e5", // màu tick
-    fontWeight: "bold",
-  },
-  checkboxOn: { backgroundColor: "#4f46e5", borderColor: "#4f46e5" },
 
   small: { fontSize: 13, color: "#475569" },
 
@@ -255,4 +281,12 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   loginText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#94a3b8",
+    backgroundColor: "#fff",
+  },
 })
