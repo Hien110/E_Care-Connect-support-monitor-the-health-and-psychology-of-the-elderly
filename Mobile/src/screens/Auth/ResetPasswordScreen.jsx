@@ -93,18 +93,19 @@ const ResetPasswordScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.root}>
-      {/* Back button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Icon name="arrow-back" size={26} color="#000000ff" />
-      </TouchableOpacity>
-
       <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
+        {/* Header với back button ngang hàng */}
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon name="arrow-back" size={26} color="#000000ff" />
+          </TouchableOpacity>
           <Text style={styles.title}>Đặt lại mật khẩu</Text>
+        </View>
+        
+        <View style={styles.header}>
           <Text style={styles.subtitle}>
             Nhập mật khẩu mới cho số điện thoại {phoneNumber}
           </Text>
@@ -180,17 +181,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+    position: 'relative',
+  },
   backButton: {
     position: 'absolute',
-    top: 20,
-    left: 20,
-    zIndex: 20,
+    left: 0,
+    padding: 5,
   },
   container: {
     flex: 1,
-    marginTop: 20,
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 20,
   },
   header: {
     alignItems: 'center',
