@@ -2,7 +2,6 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const mongoose = require("mongoose");
 const User = require("../../app/models/User"); // Đường dẫn đến User model của bạn
-require("dotenv").config({ path: "./src/.env" });
 
 passport.use(
   new GoogleStrategy(
