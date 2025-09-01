@@ -8,14 +8,17 @@ import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
 import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
 import ResetPasswordScreen from '../screens/Auth/ResetPasswordScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
-// import other screens as needed
+import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
+
+// HOC footer
+import withFooter from '../components/withFooter';
 
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="LOGIN">
+      <Stack.Navigator initialRouteName="ChangePassword">
         <Stack.Screen
           name="LOGIN"
           component={LoginScreen}
@@ -39,6 +42,13 @@ const AppNavigator = () => {
         <Stack.Screen
           name="ResetPassword"
           component={ResetPasswordScreen}
+          options={{ headerShown: false }}
+        />
+        
+        {/* 👉 Chỉ ChangePassword có footer */}
+        <Stack.Screen
+          name="ChangePassword"
+          component={withFooter(ChangePasswordScreen, 'me')}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

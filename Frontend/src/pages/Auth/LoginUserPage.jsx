@@ -36,8 +36,8 @@ export default function AdminLogin() {
         if (res.user?.role !== "admin") {
           setError("Chỉ tài khoản admin mới có thể truy cập trang này")
         } else {
-          sessionStorage.setItem("token", res.token)
-          localStorage.setItem("currentUser", JSON.stringify(res.user || {}))
+          // sessionStorage.setItem("token", res.token)
+          // localStorage.setItem("currentUser", JSON.stringify(res.user || {}))
           setSuccess(res.message || "Đăng nhập thành công")
           window.location.href = "/admin/dashboard"
         }

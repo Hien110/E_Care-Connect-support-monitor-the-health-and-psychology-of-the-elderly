@@ -56,7 +56,7 @@ const userService = {
       sessionStorage.setItem("ecare_user", JSON.stringify(user));
 
       // Set header mặc định cho axios
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      // api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
 
     return {

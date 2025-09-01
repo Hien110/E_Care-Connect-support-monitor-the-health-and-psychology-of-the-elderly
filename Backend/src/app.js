@@ -1,18 +1,16 @@
 const express = require('express');
 const morgan = require('morgan');
 const methodOverride = require('method-override');
-const dotenv = require('dotenv');
+const app = express();
 const cors = require('cors');
 const route = require('./routes');
 const db = require('./config/db');
 
 // Load biến môi trường
-dotenv.config();
 
 // Kết nối DB
 db.connect();
 
-const app = express();
 
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],
