@@ -56,10 +56,12 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setError("")
     setSuccess("")
+
     if (!phoneNumber || !password) {
       setError("Vui lòng nhập đủ số điện thoại và mật khẩu.")
       return
     }
+
     try {
       setLoading(true)
       const res = await userService.loginUser({ phoneNumber, password })
@@ -69,12 +71,19 @@ export default function LoginScreen() {
         setError(res.message || "Đăng nhập thất bại")
         return
       }
-      if (res.token) await AsyncStorage.setItem("ecare_token", res.token)
-      if (res.user) await AsyncStorage.setItem("ecare_user", JSON.stringify(res.user))
+
+      // Lưu token & user nếu rememberMe = true
+      if (res.token && rememberMe) {
+        await AsyncStorage.setItem("ecare_token", res.token)
+      }
+      if (res.user && rememberMe) {
+        await AsyncStorage.setItem("ecare_user", JSON.stringify(res.user))
+      }
 
       setSuccess("Đăng nhập thành công")
       nav.reset({ index: 0, routes: [{ name: "Home" }] })
     } catch (e) {
+      console.error("Login error: ", e)
       setError("Có lỗi xảy ra. Thử lại sau.")
     } finally {
       setLoading(false)
@@ -146,6 +155,27 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
+            <View style={styles.rowBetween}>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => setRememberMe((prev) => !prev)}
+              >
+                <View
+                  style={[
+                    styles.checkbox,
+                    rememberMe && { backgroundColor: "#4f46e5", borderColor: "#4f46e5" },
+                  ]}
+                />
+                <Text style={[styles.small, { marginLeft: 6 }]}>Ghi nhớ đăng nhập</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => nav.navigate("ForgotPassword")}>
+                <Text style={[styles.small, { color: "#2563eb", fontWeight: "600" }]}>
+                  Quên mật khẩu?
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             {!!error && <Text style={styles.error}>{error}</Text>}
             {!!success && <Text style={styles.success}>{success}</Text>}
 
@@ -187,7 +217,7 @@ const styles = StyleSheet.create({
   },
 
   logoWrap: { alignItems: "center", marginBottom: 18 },
-  logo: { width: 150, height: 150, borderRadius: 28 },
+  logo: { width: 120, height: 120, borderRadius: 28 },
   brand: { marginTop: 2, fontSize: 28, fontWeight: "800", color: "#0f172a" },
   tagline: { marginTop: 2, color: "#64748b" },
 
@@ -251,4 +281,12 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   loginText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#94a3b8",
+    backgroundColor: "#fff",
+  },
 })
