@@ -1,13 +1,13 @@
-import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import React from 'react';
 
-import HomeScreen from '../screens/Site/HomeScreen.js';
-import RegistersScreen from '../screens/RegistersScreen';
 import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
-import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
-import ResetPasswordScreen from '../screens/Auth/ResetPasswordScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
+import ResetPasswordScreen from '../screens/Auth/ResetPasswordScreen';
+import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import RegistersScreen from '../screens/RegistersScreen';
 // import other screens as needed
 
 const Stack = createStackNavigator();
@@ -39,6 +39,11 @@ const AppNavigator = () => {
         <Stack.Screen
           name="ResetPassword"
           component={ResetPasswordScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Profile"
+          component={ProfileScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
