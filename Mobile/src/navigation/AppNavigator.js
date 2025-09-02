@@ -2,6 +2,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 
+import HomeScreen from '../screens/Site/HomeScreen.jsx';
+import RegistersScreen from '../screens/RegistersScreen';
 import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import ResetPasswordScreen from '../screens/Auth/ResetPasswordScreen';
@@ -9,13 +11,18 @@ import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import RegistersScreen from '../screens/RegistersScreen';
 // import other screens as needed
+import LoginScreen from '../screens/Auth/LoginScreen';
+import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
+
+// HOC footer
+import withFooter from '../components/withFooter';
 
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="LOGIN">
+      <Stack.Navigator initialRouteName="ChangePassword">
         <Stack.Screen
           name="LOGIN"
           component={LoginScreen}
@@ -41,6 +48,18 @@ const AppNavigator = () => {
           component={ResetPasswordScreen}
           options={{ headerShown: false }}
         />
+        
+        {/* 👉 Chỉ ChangePassword có footer */}
+        <Stack.Screen
+          name="ChangePassword"
+          component={withFooter(ChangePasswordScreen, 'me')}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+                  name="Home"
+                  component={HomeScreen}
+                  options={{ headerShown: false }}
+                />
         <Stack.Screen
           name="Profile"
           component={ProfileScreen}
