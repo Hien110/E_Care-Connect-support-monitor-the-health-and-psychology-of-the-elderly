@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -13,28 +13,40 @@ import {
   Easing,
   ScrollView,
   SafeAreaView,
-} from "react-native"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import { useNavigation } from "@react-navigation/native"
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
 
-import logo from "../../assets/logoBrand.png"
-import userService from "../../services/userService"
+import logo from "../../assets/logoBrand.png";
+import userService from "../../services/userService";
 
 export default function LoginScreen() {
-  const nav = useNavigation()
-  const [phoneNumber, setPhoneNumber] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [rememberMe, setRememberMe] = useState(true)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
+  const nav = useNavigation();
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const fadeIn = useRef(new Animated.Value(0)).current
-  const floatY = useRef(new Animated.Value(0)).current
+  const fadeIn = useRef(new Animated.Value(0)).current;
+  const floatY = useRef(new Animated.Value(0)).current;
 
+  // 👉 Nếu đã có token thì vào thẳng Home
   useEffect(() => {
-    Animated.timing(fadeIn, { toValue: 1, duration: 600, useNativeDriver: true }).start()
+    (async () => {
+      try {
+        const t = await AsyncStorage.getItem("ecare_token");
+        if (t) {
+          nav.reset({ index: 0, routes: [{ name: "Home" }] });
+        }
+      } catch (_) {}
+    })();
+  }, [nav]);
+
+  // Animation
+  useEffect(() => {
+    Animated.timing(fadeIn, { toValue: 1, duration: 600, useNativeDriver: true }).start();
     Animated.loop(
       Animated.sequence([
         Animated.timing(floatY, {
@@ -50,45 +62,38 @@ export default function LoginScreen() {
           useNativeDriver: true,
         }),
       ])
-    ).start()
-  }, [fadeIn, floatY])
+    ).start();
+  }, [fadeIn, floatY]);
 
   const handleLogin = async () => {
-    setError("")
-    setSuccess("")
+    setError("");
+    setSuccess("");
 
     if (!phoneNumber || !password) {
-      setError("Vui lòng nhập đủ số điện thoại và mật khẩu.")
-      return
+      setError("Vui lòng nhập đủ số điện thoại và mật khẩu.");
+      return;
     }
 
     try {
-      setLoading(true)
-      const res = await userService.loginUser({ phoneNumber, password })
-      console.log("Login Response: ", res)
-
+      setLoading(true);
+      const res = await userService.loginUser({ phoneNumber, password });
       if (!res.success) {
-        setError(res.message || "Đăng nhập thất bại")
-        return
+        setError(res.message || "Đăng nhập thất bại");
+        return;
       }
 
-      // Lưu token & user nếu rememberMe = true
-      if (res.token && rememberMe) {
-        await AsyncStorage.setItem("ecare_token", res.token)
-      }
-      if (res.user && rememberMe) {
-        await AsyncStorage.setItem("ecare_user", JSON.stringify(res.user))
-      }
+      // ✅ Lưu vĩnh viễn token & user
+      if (res.token) await AsyncStorage.setItem("ecare_token", res.token);
+      if (res.user) await AsyncStorage.setItem("ecare_user", JSON.stringify(res.user));
 
-      setSuccess("Đăng nhập thành công")
-      nav.reset({ index: 0, routes: [{ name: "Home" }] })
+      setSuccess("Đăng nhập thành công");
+      nav.reset({ index: 0, routes: [{ name: "Home" }] });
     } catch (e) {
-      console.error("Login error: ", e)
-      setError("Có lỗi xảy ra. Thử lại sau.")
+      setError("Có lỗi xảy ra. Thử lại sau.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -144,31 +149,14 @@ export default function LoginScreen() {
                   style={styles.eyeBtn}
                   accessibilityLabel="toggle-password-visibility"
                 >
-                  <Text style={{ color: "#64748b", fontWeight: "600" }}>{showPassword ? "Ẩn" : "Hiện"}</Text>
+                  <Text style={{ color: "#64748b", fontWeight: "600" }}>
+                    {showPassword ? "Ẩn" : "Hiện"}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             <View style={styles.rowBetween}>
-              <TouchableOpacity onPress={() => nav.navigate("ForgotPassword")}>
-                <Text style={[styles.small, { color: "#2563eb", fontWeight: "600" }]}>Quên mật khẩu?</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.rowBetween}>
-              <TouchableOpacity
-                style={styles.row}
-                onPress={() => setRememberMe((prev) => !prev)}
-              >
-                <View
-                  style={[
-                    styles.checkbox,
-                    rememberMe && { backgroundColor: "#4f46e5", borderColor: "#4f46e5" },
-                  ]}
-                />
-                <Text style={[styles.small, { marginLeft: 6 }]}>Ghi nhớ đăng nhập</Text>
-              </TouchableOpacity>
-
               <TouchableOpacity onPress={() => nav.navigate("ForgotPassword")}>
                 <Text style={[styles.small, { color: "#2563eb", fontWeight: "600" }]}>
                   Quên mật khẩu?
@@ -198,23 +186,16 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {/* Spacer nhỏ để tránh bị dính cạnh dưới khi cuộn */}
           <View style={{ height: 24 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#eef2ff" },
-
-  // Giúp nội dung chiếm đủ chiều cao để ScrollView hoạt động mượt mà
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
-    justifyContent: "center",
-  },
+  scrollContent: { flexGrow: 1, padding: 20, justifyContent: "center" },
 
   logoWrap: { alignItems: "center", marginBottom: 18 },
   logo: { width: 120, height: 120, borderRadius: 28 },
@@ -247,7 +228,6 @@ const styles = StyleSheet.create({
   eyeBtn: { position: "absolute", right: 12, top: 12, padding: 6 },
 
   rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 2 },
-  row: { flexDirection: "row", alignItems: "center" },
 
   small: { fontSize: 13, color: "#475569" },
 
@@ -281,12 +261,4 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   loginText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: "#94a3b8",
-    backgroundColor: "#fff",
-  },
-})
+});
