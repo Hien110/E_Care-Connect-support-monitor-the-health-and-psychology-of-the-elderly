@@ -8,11 +8,8 @@ import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import ResetPasswordScreen from '../screens/Auth/ResetPasswordScreen';
 import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import RegistersScreen from '../screens/RegistersScreen';
-// import other screens as needed
-import LoginScreen from '../screens/Auth/LoginScreen';
 import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 // HOC footer
 import withFooter from '../components/withFooter';
@@ -22,7 +19,7 @@ const Stack = createStackNavigator();
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="ChangePassword">
+      <Stack.Navigator initialRouteName="Login">
         <Stack.Screen
           name="LOGIN"
           component={LoginScreen}
