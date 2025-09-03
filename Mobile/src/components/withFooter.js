@@ -3,7 +3,7 @@ import React from 'react';
 import AppLayout from './AppLayout';
 
 const routeMap = {
-  home: 'HOME',        // trang chủ
+  home: 'Home',        // trang chủ
   mood: 'MOOD',
   plan: 'PLAN',
   messages: 'MESSAGES',
