@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  StatusBar,
-  SafeAreaView,
   ActivityIndicator,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import userService from '../services/userService';
+import userService from '../../services/userService';
 
 const ProfileScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
@@ -52,18 +52,27 @@ const ProfileScreen = ({ navigation }) => {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation?.goBack && navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cập nhật thông tin cá nhân</Text>
+        <Text style={styles.headerTitle}>Xem thông tin cá nhân</Text>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Image */}
         <View style={styles.profileSection}>
+        <View style={styles.avatarWrapper}>
           <Image
-            source={{ uri: user.avatar || 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-mAf0Q5orw3lJzIC2j6NFU6Ik2VNcgB.png' }}
+            source={{
+              uri:
+                user.avatar ||
+                'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-mAf0Q5orw3lJzIC2j6NFU6Ik2VNcgB.png',
+            }}
             style={styles.profileImage}
           />
+          <TouchableOpacity style={styles.editAvatarButton}>
+            <Icon name="pencil" size={16} color="#fff" />
+          </TouchableOpacity>
         </View>
+      </View>
 
         {/* Form Fields */}
         <View style={styles.formSection}>
@@ -158,7 +167,7 @@ const styles = StyleSheet.create({
     color: '#000000',
     flex: 1,
     textAlign: 'center',
-    marginRight: 40, 
+    marginLeft: 10,
   },
   placeholder: {
     width: 40,
@@ -206,7 +215,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   editButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0046FF',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
@@ -217,7 +226,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   changeButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0046FF',
     marginHorizontal: 16,
     marginVertical: 24,
     paddingVertical: 16,
@@ -229,6 +238,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  avatarWrapper: {
+  position: 'relative',
+  width: 100,
+  height: 100,
+},
+profileImage: {
+  width: '100%',
+  height: '100%',
+  borderRadius: 50,
+  backgroundColor: '#f5f5f5',
+},
+editAvatarButton: {
+  position: 'absolute',
+  bottom: 0,
+  right: 0,
+  backgroundColor: '#0046FF',
+  borderRadius: 16,
+  padding: 6,
+  borderWidth: 2,
+  borderColor: '#fff', 
+  elevation: 3, 
+},
 });
 
 export default ProfileScreen;
