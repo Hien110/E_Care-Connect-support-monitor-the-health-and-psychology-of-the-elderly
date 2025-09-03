@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -6,27 +6,120 @@ import {
   StyleSheet,
   TextInput,
   SafeAreaView,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { userService } from '../../services/userService';
 
-const OtpVerificationScreen = ({ navigation }) => {
+const OtpVerificationScreen = ({ navigation, route }) => {
   const [otp, setOtp] = useState(["", "", "", ""]);
+  const [loading, setLoading] = useState(false);
+  
+  // Tạo refs cho các TextInput
+  const inputRefs = useRef([]);
+  
+  // Lấy thông tin từ route params
+  const { phoneNumber, isResetPassword = false } = route.params || {};
 
   const handleChange = (text, index) => {
     if (text.length > 1) return; // chỉ cho nhập 1 số
+    
     const newOtp = [...otp];
     newOtp[index] = text;
     setOtp(newOtp);
+
+    // Tự động nhảy đến ô tiếp theo khi nhập số
+    if (text && index < 3) {
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    // Tự động submit khi nhập đủ 4 số
+    if (text && index === 3) {
+      const completeOtp = newOtp.join("");
+      if (completeOtp.length === 4) {
+        // Delay một chút để UI cập nhật
+        setTimeout(() => {
+          handleSubmitWithOtp(completeOtp);
+        }, 100);
+      }
+    }
   };
 
-  const handleResend = () => {
+  const handleKeyPress = (e, index) => {
+    // Xử lý phím Backspace để nhảy về ô trước
+    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleResend = async () => {
     setOtp(["", "", "", ""]);
-    console.log("Gửi lại mã OTP");
+    // Focus vào ô đầu tiên sau khi reset
+    inputRefs.current[0]?.focus();
+    
+    if (isResetPassword && phoneNumber) {
+      setLoading(true);
+      try {
+        const result = await userService.sendForgotPasswordOTP({ phoneNumber });
+        if (result.success) {
+          Alert.alert('Thành công', result.message);
+        } else {
+          Alert.alert('Lỗi', result.message);
+        }
+      } catch (error) {
+        Alert.alert('Lỗi', 'Có lỗi xảy ra khi gửi lại mã OTP');
+        console.error('Resend OTP error:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleSubmitWithOtp = async (otpCode = null) => {
+    const finalOtpCode = otpCode || otp.join("");
+    if (finalOtpCode.length !== 4) {
+      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ mã OTP');
+      return;
+    }
+
+    if (!phoneNumber) {
+      Alert.alert('Lỗi', 'Không tìm thấy số điện thoại');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (isResetPassword) {
+        // Xử lý xác thực OTP cho quên mật khẩu
+        const result = await userService.verifyForgotPasswordOTP({ 
+          phoneNumber, 
+          otp: finalOtpCode 
+        });
+        
+        if (result.success) {
+          // Chuyển đến màn hình đặt lại mật khẩu
+          navigation.navigate('ResetPassword', { 
+            resetToken: result.data.resetToken,
+            phoneNumber 
+          });
+        } else {
+          Alert.alert('Lỗi', result.message);
+        }
+      } else {
+        // Xử lý OTP cho đăng ký (logic cũ)
+        console.log("OTP nhập:", finalOtpCode);
+        // TODO: Gọi API xác thực OTP cho đăng ký
+      }
+    } catch (error) {
+      Alert.alert('Lỗi', 'Có lỗi xảy ra khi xác thực OTP');
+      console.error('Verify OTP error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = () => {
-    console.log("OTP nhập:", otp.join(""));
-    // TODO: Gọi API xác thực OTP
+    handleSubmitWithOtp();
   };
 
   return (
@@ -51,23 +144,37 @@ const OtpVerificationScreen = ({ navigation }) => {
           {otp.map((digit, index) => (
             <TextInput
               key={index}
+              ref={(ref) => (inputRefs.current[index] = ref)}
               style={styles.otpInput}
               value={digit}
               keyboardType="number-pad"
               maxLength={1}
               onChangeText={(text) => handleChange(text, index)}
+              onKeyPress={(e) => handleKeyPress(e, index)}
+              autoFocus={index === 0} // Tự động focus vào ô đầu tiên
             />
           ))}
         </View>
 
         {/* Nút đặt lại mật khẩu */}
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Đặt lại mật khẩu</Text>
+        <TouchableOpacity 
+          style={[styles.button, loading && styles.buttonDisabled]} 
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {isResetPassword 
+              ? (loading ? 'Đang xác thực...' : 'Đặt lại mật khẩu')
+              : (loading ? 'Đang xác thực...' : 'Xác thực')
+            }
+          </Text>
         </TouchableOpacity>
 
         {/* Gửi lại mã */}
-        <TouchableOpacity onPress={handleResend}>
-          <Text style={styles.resendText}>Gửi lại mã</Text>
+        <TouchableOpacity onPress={handleResend} disabled={loading}>
+          <Text style={[styles.resendText, loading && styles.textDisabled]}>
+            {loading ? 'Đang gửi...' : 'Gửi lại mã'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -144,5 +251,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#335CFF",
     fontWeight: "500",
+  },
+  buttonDisabled: {
+    backgroundColor: "#ccc",
+  },
+  textDisabled: {
+    color: "#ccc",
   },
 });

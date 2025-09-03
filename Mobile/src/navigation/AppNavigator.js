@@ -1,34 +1,33 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import HomeScreen from '../screens/Site/HomeScreen';
-import RegisterScreen from '../screens/Auth/RegisterScreen';
+
+import HomeScreen from '../screens/Site/HomeScreen.jsx';
+import RegistersScreen from '../screens/RegistersScreen';
 import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
 import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
+import ResetPasswordScreen from '../screens/Auth/ResetPasswordScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
-// import other screens as needed
-// Import other screens later
+import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
+
+// HOC footer
+import withFooter from '../components/withFooter';
 
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="LOGIN">
+      <Stack.Navigator initialRouteName="ChangePassword">
         <Stack.Screen
           name="LOGIN"
           component={LoginScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="Register"
-          component={RegisterScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{ headerShown: false }}
+          name="Registers"
+          component={RegistersScreen}
+          options={{ title: 'Đăng Ký Cho Người Già' }}
         />
         <Stack.Screen
           name="ForgotPassword"
@@ -40,6 +39,23 @@ const AppNavigator = () => {
           component={VerifySMSScreen}
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="ResetPassword"
+          component={ResetPasswordScreen}
+          options={{ headerShown: false }}
+        />
+        
+        {/* 👉 Chỉ ChangePassword có footer */}
+        <Stack.Screen
+          name="ChangePassword"
+          component={withFooter(ChangePasswordScreen, 'me')}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+                  name="Home"
+                  component={HomeScreen}
+                  options={{ headerShown: false }}
+                />
       </Stack.Navigator>
     </NavigationContainer>
   );
