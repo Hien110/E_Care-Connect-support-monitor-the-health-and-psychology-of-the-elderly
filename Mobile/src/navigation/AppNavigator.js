@@ -1,16 +1,17 @@
-import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import React from 'react';
 
 
 import HomeScreen from '../screens/Site/HomeScreen';
 import RegistersScreen from '../screens/Auth/RegistersScreen';
 import RegistersScreen from '../screens/RegistersScreen';
 import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
-import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
-import ResetPasswordScreen from '../screens/Auth/ResetPasswordScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
+import ResetPasswordScreen from '../screens/Auth/ResetPasswordScreen';
+import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
 import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 // HOC footer
 import withFooter from '../components/withFooter';
@@ -20,7 +21,7 @@ const Stack = createStackNavigator();
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="ChangePassword">
+      <Stack.Navigator initialRouteName="Login">
         <Stack.Screen
           name="LOGIN"
           component={LoginScreen}
@@ -58,6 +59,11 @@ const AppNavigator = () => {
                   component={HomeScreen}
                   options={{ headerShown: false }}
                 />
+        <Stack.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{ headerShown: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
