@@ -444,6 +444,52 @@ const UserController = {
       });
     }
   },
+
+  // Thay đổi mật khẩu
+  changePassword: async (req, res) => {
+    try {
+      const { oldPassword, newPassword } = req.body;
+      if (!oldPassword || !newPassword) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Thiếu mật khẩu cũ hoặc mật khẩu mới" 
+        });
+      }
+
+      const user = await User.findById(req.user.userId).select('+password');
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Người dùng không tồn tại" 
+        });
+      }
+
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Mật khẩu cũ không đúng" 
+        });
+      }
+
+      // Hash mật khẩu mới và cập nhật
+      const hashedPassword = await hashPassword(newPassword);
+      user.password = hashedPassword;
+      await user.save();
+
+      return res.status(200).json({ 
+        success: true, 
+        message: "Thay đổi mật khẩu thành công" 
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ 
+        success: false, 
+        message: err.message 
+      });
+    }
+  },
+
 };
 
 module.exports = UserController;

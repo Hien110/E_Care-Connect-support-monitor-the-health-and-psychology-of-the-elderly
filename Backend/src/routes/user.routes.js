@@ -24,5 +24,7 @@ router.post("/forgot-password/reset", UserController.resetPassword);
 
 router.use(authenticateToken);
 router.get("/getUserInfo", UserController.getUserInfo);
+// Thay đổi mật khẩu
+router.put("/change-password", UserController.changePassword);
 
 module.exports = router;
