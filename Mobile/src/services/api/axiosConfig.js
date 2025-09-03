@@ -31,6 +31,11 @@ export async function getSavedUser() {
   return u ? JSON.parse(u) : null;
 }
 
+// Base URL của API - thay đổi theo địa chỉ server của bạn
+const BASE_URL = 'http://192.168.1.101:3000/api'; // Thay bằng IP máy bạn
+ 
+// Tạo instance axios
+
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 10000,
