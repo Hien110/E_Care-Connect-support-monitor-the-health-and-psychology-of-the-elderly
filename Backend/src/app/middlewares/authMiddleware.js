@@ -15,7 +15,7 @@ const authenticateToken = (req, res, next) => {
     req.user = decoded; // Lưu thông tin user vào req để dùng sau
     next();
   } catch (err) {
-    return res.status(403).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
+    return res.status(403).json({ message: "Token không hợp lệ hoặc đã hết hạn" + err });
   }
 };
 

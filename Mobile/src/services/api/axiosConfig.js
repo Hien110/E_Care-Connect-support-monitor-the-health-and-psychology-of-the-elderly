@@ -1,49 +1,68 @@
-import axios from 'axios';
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+export const BASE_URL = "http://192.168.1.12:3000/api";
+
+// ===== Token storage (in-memory + AsyncStorage) =====
+const TOKEN_KEY = "ecare_token";
+let inMemoryToken = null;
+
+export async function getAPIToken() {
+  if (inMemoryToken) return inMemoryToken;
+  const t = await AsyncStorage.getItem(TOKEN_KEY);
+  inMemoryToken = t;
+  return t;
+}
+
+export async function setAPIToken(token) {
+  inMemoryToken = token || null;
+  if (token) await AsyncStorage.setItem(TOKEN_KEY, token);
+  else await AsyncStorage.removeItem(TOKEN_KEY);
+}
+
+// (tuỳ chọn) Lưu/đọc user để reuse ở UI
+const USER_KEY = "ecare_user";
+export async function setSavedUser(user) {
+  if (user) await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
+  else await AsyncStorage.removeItem(USER_KEY);
+}
+export async function getSavedUser() {
+  const u = await AsyncStorage.getItem(USER_KEY);
+  return u ? JSON.parse(u) : null;
+}
 
 // Base URL của API - thay đổi theo địa chỉ server của bạn
 const BASE_URL = 'http://192.168.1.101:3000/api'; // Thay bằng IP máy bạn
  
 // Tạo instance axios
+
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
-// Request interceptor
+// Gắn Authorization mỗi request
 api.interceptors.request.use(
-  (config) => {
-    console.log('🚀 API Request:', config.method?.toUpperCase(), config.url);
-    // Thêm token nếu có
-    const token = ''; // Lấy từ AsyncStorage hoặc Redux
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+  async (config) => {
+    const token = await getAPIToken();
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor
+// (tuỳ chọn) Nếu 401 có thể auto-logout tại đây
 api.interceptors.response.use(
-  (response) => {
-    console.log('✅ API Response:', response.status, response.data);
-    return response;
-  },
-  (error) => {
-    console.log('❌ API Error:', error.response?.data || error.message);
-    
-    // Xử lý lỗi chung
-    if (error.response?.status === 401) {
-      // Token hết hạn, đăng xuất
-    }
-    
+  (res) => res,
+  async (error) => {
+    // if (error?.response?.status === 401) {
+    //   await setAPIToken(null);
+    //   await setSavedUser(null);
+    // }
     return Promise.reject(error);
   }
 );
 
 export default api;
+export { api };

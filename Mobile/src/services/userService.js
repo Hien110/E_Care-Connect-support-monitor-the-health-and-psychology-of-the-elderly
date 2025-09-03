@@ -1,5 +1,5 @@
-import {api} from "./api"; // Đảm bảo bạn import axiosConfig
-
+import {api} from "./api"; 
+import { setAPIToken, setSavedUser, getAPIToken, getSavedUser } from "./api/axiosConfig";
 let RNStorage = null;
 try {
   RNStorage = require("@react-native-async-storage/async-storage").default;
@@ -103,7 +103,7 @@ export const userService = {
   // B4: Hoàn tất hồ sơ
 completeProfile: async ({ fullName, dateOfBirth, gender, password }) => {
   try {
-    const response = await api.put("/users/complete-profile", {
+    const response = await api.put('/users/complete-profile', {
       fullName,
       dateOfBirth,
       gender,
@@ -122,57 +122,50 @@ completeProfile: async ({ fullName, dateOfBirth, gender, password }) => {
     };
   }
 },
-
-  // Forgot Password - Gửi OTP
-  sendForgotPasswordOTP: async ({ phoneNumber }) => {
+// Đăng nhập
+ loginUser: async ({ phoneNumber, password }) => {
     try {
-      const response = await api.post('/users/forgot-password/send-otp', { phoneNumber });
+      const res = await api.post("/users/loginUser", { phoneNumber, password });
+      const token = res.data?.token || res.data?.data?.token;
+      const user = res.data?.user || res.data?.data?.user;
+
+      if (token) await setAPIToken(token);        // <- LƯU VĨNH VIỄN
+      if (user) await setSavedUser(user);
+
       return {
         success: true,
-        data: response.data.data,
-        message: response.data.message
+        token,
+        user,
+        message: res.data?.message || "Đăng nhập thành công",
       };
+    } catch (error) {
+      const msg = error?.response?.data?.message || "Đăng nhập thất bại";
+      return { success: false, token: null, user: null, message: msg };
+    }
+  },
+
+// Lấy thông tin user
+ getUserInfo: async () => {
+    try {
+      const res = await api.get("/users/getUserInfo");
+      return { success: true, data: res.data?.data };
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data.message || error.message
+        data: null,
+        message: error?.response?.data?.message || "Lấy thông tin người dùng thất bại",
       };
     }
   },
 
-  // Forgot Password - Xác thực OTP
-  verifyForgotPasswordOTP: async ({ phoneNumber, otp }) => {
-    try {
-      const response = await api.post('/users/forgot-password/verify-otp', { phoneNumber, otp });
-      return {
-        success: true,
-        data: response.data.data,
-        message: response.data.message
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data.message || error.message
-      };
-    }
+  // Helpers (nếu cần dùng ở nơi khác)
+  getToken: async () => getAPIToken(),
+  getCurrentUser: async () => getSavedUser(),
+  logout: async () => {
+    await setAPIToken(null);
+    await setSavedUser(null);
   },
-
-  // Forgot Password - Đặt lại mật khẩu
-  resetPassword: async ({ resetToken, newPassword }) => {
-    try {
-      const response = await api.post('/users/forgot-password/reset', { resetToken, newPassword });
-      return {
-        success: true,
-        message: response.data.message
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data.message || error.message
-      };
-    }
-  }
-}
+};
 
 
 
