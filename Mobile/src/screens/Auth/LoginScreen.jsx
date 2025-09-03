@@ -82,9 +82,9 @@ export default function LoginScreen() {
         return;
       }
 
-      // ✅ Lưu vĩnh viễn token & user
-      if (res.token) await AsyncStorage.setItem("ecare_token", res.token);
-      if (res.user) await AsyncStorage.setItem("ecare_user", JSON.stringify(res.user));
+      // Lưu vĩnh viễn token & user
+      if (res.token) await userService.setToken(res.token);
+      if (res.user) await userService.setUser(res.user);
 
       setSuccess("Đăng nhập thành công");
       nav.reset({ index: 0, routes: [{ name: "Home" }] });
