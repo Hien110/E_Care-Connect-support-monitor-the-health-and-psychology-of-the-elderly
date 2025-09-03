@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const hashPassword = require("../../utils/hashPassword");
-
+const redis = require("../../utils/redis");
 const avatarDefault =
   "https://i.pinimg.com/736x/c6/e5/65/c6e56503cfdd87da299f72dc416023d4.jpg";
 
@@ -49,40 +49,33 @@ const UserController = {
     }
   },
 
-  // B1: Chọn role + nhập sđt -> gửi OTP
-  sendOTP: async (req, res) => {
+  // B1: gửi OTP
+ sendOTP : async (req, res) => {
   try {
     const { phoneNumber, role } = req.body;
-    if (!phoneNumber || !role)
+    if (!phoneNumber || !role) {
       return res.status(400).json({ success: false, message: "Thiếu phoneNumber hoặc role" });
-
-    if (!["elderly", "family"].includes(role))
+    }
+    if (!["elderly", "family"].includes(role)) {
       return res.status(400).json({ success: false, message: "Role không hợp lệ" });
+    }
 
+    // Check đã có user active chưa
     const existingActive = await User.findOne({ phoneNumber, isActive: true });
-    if (existingActive)
+    if (existingActive) {
       return res.status(409).json({ success: false, message: "Số điện thoại đã được đăng ký" });
+    }
 
     const e164 = normalizeVNPhone(phoneNumber);
     const code = generate4Digits();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    let user = await User.findOne({ phoneNumber });
-    if (!user) {
-      user = new User({
-        phoneNumber,
-        role,
-        isActive: false,
-        otp: { code, expiresAt },
-      });
-      // bỏ qua validate khi save
-      await user.save({ validateBeforeSave: false });
-    } else {
-      user.role = role;
-      user.otp = { code, expiresAt };
-      await user.save({ validateBeforeSave: false });
-    }
+    // Lưu vào Redis (TTL 5 phút)
+    const key = `tempRegister:${phoneNumber}`;
+    const tempData = { phoneNumber, role, code, expiresAt, otpVerified: false };
+    await redis.set(key, JSON.stringify(tempData), "EX", 300);
 
+    // Gửi SMS
     const message = `Mã xác nhận OTP của bạn là: ${code}`;
     const smsRes = await sendSMS({ to: e164, message });
     if (!smsRes.success) {
@@ -100,88 +93,74 @@ const UserController = {
   }
 },
 
-  // B2: verify OTP
-  verifyOTP: async (req, res) => {
-    try {
-      const { phoneNumber, otp } = req.body;
-      if (!phoneNumber || !otp)
-        return res
-          .status(400)
-          .json({ success: false, message: "Thiếu phoneNumber hoặc otp" });
-
-      const user = await User.findOne({ phoneNumber });
-      if (!user || !user.otp?.code)
-        return res
-          .status(404)
-          .json({ success: false, message: "Không tìm thấy OTP" });
-      if (user.otp.expiresAt < new Date())
-        return res
-          .status(400)
-          .json({ success: false, message: "OTP đã hết hạn" });
-      if (user.otp.code !== otp)
-        return res
-          .status(400)
-          .json({ success: false, message: "OTP không đúng" });
-
-      // mark verified by clearing otp (or set otpVerified flag if you want)
-      user.otp = { code: null, expiresAt: null };
-      await user.save({ validateBeforeSave: false });
-      return res
-        .status(200)
-        .json({ success: true, message: "Xác thực OTP thành công" });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, message: err.message });
+// B2: verify OTP
+ verifyOTP: async (req, res) => {
+  try {
+    const { phoneNumber, otp } = req.body;
+    if (!phoneNumber || !otp) {
+      return res.status(400).json({ success: false, message: "Thiếu phoneNumber hoặc otp" });
     }
-  },
 
-  // B3: set identity card (CMND/CCCD)
-  setIdentity: async (req, res) => {
-    try {
-      const { phoneNumber, identityCard } = req.body;
-      if (!phoneNumber || !identityCard)
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Thiếu phoneNumber hoặc identityCard",
-          });
-
-      const user = await User.findOne({ phoneNumber });
-      if (!user)
-        return res
-          .status(404)
-          .json({ success: false, message: "Không tìm thấy user" });
-
-      // Check user passed OTP (otp cleared)
-      if (user.otp?.code)
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Vui lòng xác thực OTP trước khi nhập CCCD",
-          });
-
-      // Check CCCD unique among active users
-      const exists = await User.findOne({ identityCard });
-      if (exists && exists.phoneNumber !== phoneNumber) {
-        return res
-          .status(409)
-          .json({ success: false, message: "CCCD đã được đăng ký" });
-      }
-
-      user.identityCard = identityCard;
-      await user.save({ validateBeforeSave: false });
-      return res
-        .status(200)
-        .json({ success: true, message: "Cập nhật CCCD thành công" });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, message: err.message });
+    const key = `tempRegister:${phoneNumber}`;
+    const dataStr = await redis.get(key);
+    if (!dataStr) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy OTP hoặc đã hết hạn" });
     }
-  },
 
-  // B4: complete profile -> fullName, dateOfBirth, gender => set active + hash password
+    const data = JSON.parse(dataStr);
+    if (new Date(data.expiresAt) < new Date()) {
+      return res.status(400).json({ success: false, message: "OTP đã hết hạn" });
+    }
+    if (data.code !== otp) {
+      return res.status(400).json({ success: false, message: "OTP không đúng" });
+    }
+
+    data.otpVerified = true;
+    await redis.set(key, JSON.stringify(data), "EX", 600); // gia hạn thêm 10 phút cho bước tiếp theo
+
+    return res.status(200).json({ success: true, message: "Xác thực OTP thành công", phoneNumber: phoneNumber });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+},
+
+// B3: set identity card
+ setIdentity: async (req, res) => {
+  try {
+    const { phoneNumber, identityCard } = req.body;
+    if (!phoneNumber || !identityCard) {
+      return res.status(400).json({ success: false, message: "Thiếu phoneNumber hoặc identityCard" });
+    }
+
+    const key = `tempRegister:${phoneNumber}`;
+    const dataStr = await redis.get(key);
+    if (!dataStr) {
+      return res.status(404).json({ success: false, message: "Session đăng ký đã hết hạn" });
+    }
+
+    const data = JSON.parse(dataStr);
+    if (!data.otpVerified) {
+      return res.status(400).json({ success: false, message: "Vui lòng xác thực OTP trước" });
+    }
+
+    // Check CCCD đã có ở DB chưa
+    const exists = await User.findOne({ identityCard });
+    if (exists) {
+      return res.status(409).json({ success: false, message: "CCCD đã được đăng ký" });
+    }
+
+    data.identityCard = identityCard;
+    await redis.set(key, JSON.stringify(data), "EX", 900); // gia hạn thêm
+
+    return res.status(200).json({ success: true, message: "Lưu CCCD thành công" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+},
+
+ // B4: complete profile -> fullName, dateOfBirth, gender => set active + hash password
   completeProfile: async (req, res) => {
   try {
     const { fullName, dateOfBirth, gender, password } = req.body;
@@ -252,7 +231,6 @@ const UserController = {
     return res.status(500).json({ success: false, message: err.message });
   }
 },
-
     
   // Đăng nhập
   loginUser: async (req, res) => {
