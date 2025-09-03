@@ -65,11 +65,17 @@ const ChangePasswordScreen = ({ navigation }) => {
       });
 
       if (res?.success) {
-        Alert.alert('Thành công', res.message || 'Đổi mật khẩu thành công!', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
+        navigation.navigate('SuccessScreen', {
+          title: 'Đổi mật khẩu thành công',
+          description:
+            res.message ||
+            'Bạn đã đổi mật khẩu thành công! Quay lại trang chủ.',
+        });
       } else {
-        Alert.alert('Lỗi', res?.message || 'Không thể đổi mật khẩu. Vui lòng thử lại.');
+        Alert.alert(
+          'Lỗi',
+          res?.message || 'Không thể đổi mật khẩu. Vui lòng thử lại.',
+        );
       }
     } catch (e) {
       console.error('Change password error:', e);
@@ -85,23 +91,25 @@ const ChangePasswordScreen = ({ navigation }) => {
         style={{ flex: 1, width: '100%' }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Header ngang hàng */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Icon name="arrow-back" size={28} color="#000" />
             </TouchableOpacity>
             <Text style={styles.title}>Thay đổi mật khẩu</Text>
-            <View style={{ width: 28 }} /> 
+            <View style={{ width: 28 }} />
             {/* placeholder để cân đối 2 bên */}
           </View>
 
           {/*Hiển thị view Các điều kiện thay đổi mật khẩu như không có dấu cách và ít nhất 6 kí tự */}
-            <Text style={{ color: '#555', fontSize: 12, marginTop: -10 }}>
-              - Mật khẩu mới không được có dấu cách
-              {'\n'}
-              - Mật khẩu mới phải có ít nhất 6 ký tự
-            </Text>
+          <Text style={{ color: '#555', fontSize: 12, marginTop: -10 }}>
+            - Mật khẩu mới không được có dấu cách
+            {'\n'}- Mật khẩu mới phải có ít nhất 6 ký tự
+          </Text>
 
           {/* Mật khẩu cũ */}
           <Text style={styles.label}>Mật khẩu cũ</Text>
@@ -113,7 +121,10 @@ const ChangePasswordScreen = ({ navigation }) => {
               value={oldPassword}
               onChangeText={setOldPassword}
             />
-            <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowOld(v => !v)}>
+            <TouchableOpacity
+              style={styles.eyeBtn}
+              onPress={() => setShowOld(v => !v)}
+            >
               <Icon name={showOld ? 'eye' : 'eye-off'} size={22} color="#777" />
             </TouchableOpacity>
           </View>
@@ -128,7 +139,10 @@ const ChangePasswordScreen = ({ navigation }) => {
               value={newPassword}
               onChangeText={setNewPassword}
             />
-            <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowNew(v => !v)}>
+            <TouchableOpacity
+              style={styles.eyeBtn}
+              onPress={() => setShowNew(v => !v)}
+            >
               <Icon name={showNew ? 'eye' : 'eye-off'} size={22} color="#777" />
             </TouchableOpacity>
           </View>
@@ -143,18 +157,27 @@ const ChangePasswordScreen = ({ navigation }) => {
               value={confirmPassword}
               onChangeText={setConfirmPassword}
             />
-            <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowConfirm(v => !v)}>
-              <Icon name={showConfirm ? 'eye' : 'eye-off'} size={22} color="#777" />
+            <TouchableOpacity
+              style={styles.eyeBtn}
+              onPress={() => setShowConfirm(v => !v)}
+            >
+              <Icon
+                name={showConfirm ? 'eye' : 'eye-off'}
+                size={22}
+                color="#777"
+              />
             </TouchableOpacity>
           </View>
-            {error && <Text style={styles.error}>{error}</Text>}
+          {error && <Text style={styles.error}>{error}</Text>}
           {/* Nút lưu */}
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleChangePassword}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>{loading ? 'Đang lưu...' : 'Lưu mật khẩu'}</Text>
+            <Text style={styles.buttonText}>
+              {loading ? 'Đang lưu...' : 'Lưu mật khẩu'}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -231,13 +254,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   error: {
-    backgroundColor: "#fee2e2",
-    color: "#b91c1c",
-    borderColor: "#fecaca",
+    backgroundColor: '#fee2e2',
+    color: '#b91c1c',
+    borderColor: '#fecaca',
     borderWidth: 1,
     padding: 10,
     borderRadius: 10,
     marginTop: 12,
-    textAlign: "center",
+    textAlign: 'center',
   },
 });
