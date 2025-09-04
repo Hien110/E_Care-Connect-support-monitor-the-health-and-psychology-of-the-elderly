@@ -11,6 +11,7 @@ import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
 import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen.jsx';
 import SuccessScreen from '../screens/Site/SuccessScreen';
+import PersonalInfoScreen from '../screens/Profile/PersonalInfoScreen.jsx';
 
 // HOC footer
 import withFooter from '../components/withFooter';
@@ -67,6 +68,11 @@ const AppNavigator = () => {
         <Stack.Screen
           name="Profile"
           component={ProfileScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PersonalInfo"
+          component={PersonalInfoScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
