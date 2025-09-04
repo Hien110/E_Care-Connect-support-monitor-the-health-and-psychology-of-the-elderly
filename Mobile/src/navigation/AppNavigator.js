@@ -1,14 +1,17 @@
-import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import React from 'react';
 
-import HomeScreen from '../screens/Site/HomeScreen.jsx';
-import RegistersScreen from '../screens/RegistersScreen';
+import HomeScreen from '../screens/Site/HomeScreen';
+import RegistersScreen from '../screens/Auth/RegistersScreen';
 import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
-import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
-import ResetPasswordScreen from '../screens/Auth/ResetPasswordScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
+import ResetPasswordScreen from '../screens/Auth/ResetPasswordScreen';
+import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
 import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
+import ProfileScreen from '../screens/Profile/ProfileScreen.jsx';
+import SuccessScreen from '../screens/Site/SuccessScreen';
+import PersonalInfoScreen from '../screens/Profile/PersonalInfoScreen.jsx';
 
 // HOC footer
 import withFooter from '../components/withFooter';
@@ -18,16 +21,16 @@ const Stack = createStackNavigator();
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="LOGIN">
+      <Stack.Navigator initialRouteName="Profile">
         <Stack.Screen
-          name="LOGIN"
+          name="Login"
           component={LoginScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Registers"
           component={RegistersScreen}
-          options={{ title: 'Đăng Ký Cho Người Già' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="ForgotPassword"
@@ -44,7 +47,13 @@ const AppNavigator = () => {
           component={ResetPasswordScreen}
           options={{ headerShown: false }}
         />
-        
+
+        <Stack.Screen
+          name="SuccessScreen"
+          component={SuccessScreen}
+          options={{ headerShown: false }}
+        />
+
         {/* 👉 Chỉ ChangePassword có footer */}
         <Stack.Screen
           name="ChangePassword"
@@ -52,10 +61,20 @@ const AppNavigator = () => {
           options={{ headerShown: false }}
         />
         <Stack.Screen
-                  name="Home"
-                  component={HomeScreen}
-                  options={{ headerShown: false }}
-                />
+          name="Home"
+          component={withFooter(HomeScreen, 'home')}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PersonalInfo"
+          component={PersonalInfoScreen}
+          options={{ headerShown: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
