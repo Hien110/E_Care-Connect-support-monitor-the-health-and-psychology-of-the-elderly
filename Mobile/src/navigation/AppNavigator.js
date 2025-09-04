@@ -18,7 +18,7 @@ const Stack = createStackNavigator();
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="ChangePassword">
+      <Stack.Navigator initialRouteName="LOGIN">
         <Stack.Screen
           name="LOGIN"
           component={LoginScreen}
