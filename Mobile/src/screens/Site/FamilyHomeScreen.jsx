@@ -185,7 +185,7 @@ export default function EnhancedHealthAppRN() {
               <View>
                 <Text style={styles.hTitle}>Theo dõi sức khỏe gia đình</Text>
                 <Text style={styles.hSub}>
-                  {me?.fullName || me?.name || "Người dùng"} • {capitalize(me?.role) || "Supporter"}
+                  {me?.fullName || me?.name || "Người dùng"}
                 </Text>
               </View>
             </View>

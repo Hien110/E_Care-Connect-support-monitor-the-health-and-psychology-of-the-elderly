@@ -32,16 +32,48 @@ export default function LoginScreen() {
   const fadeIn = useRef(new Animated.Value(0)).current;
   const floatY = useRef(new Animated.Value(0)).current;
 
+  const ROLE_TO_ROUTE = {
+    elderly: "ElderHome",
+    family: "FamilyMemberHome",
+    supporter: "SupporterHome",
+  };
   // 👉 Nếu đã có token thì vào thẳng Home
   useEffect(() => {
+    let mounted = true;
+
     (async () => {
       try {
-        const t = await AsyncStorage.getItem("ecare_token");
-        if (t) {
-          nav.reset({ index: 0, routes: [{ name: "Home" }] });
+        const token = await AsyncStorage.getItem('ecare_token');
+        if (!token) return; 
+
+        await userService.setToken(token);
+
+        let user = null;
+        const userStr = await userService.getItem('ecare_user');
+        if (userStr) {
+          try { user = JSON.parse(userStr); } catch { }
         }
-      } catch (_) {}
+
+        if (!user) {
+          const res = await userService.getUserInfo();
+          if (res?.success) {
+            user = res.data?.user || res.data;
+            await userService.setUser(user); 
+          }
+        }
+
+        if (!mounted) return;
+
+        const routeName = ROLE_TO_ROUTE[user?.role] || FALLBACK_ROUTE;
+        nav.reset({ index: 0, routes: [{ name: routeName }] });
+      } catch (e) {
+        try {
+          await userService.logout?.(); 
+        } catch { }
+      }
     })();
+
+    return () => { mounted = false; };
   }, [nav]);
 
   // Animation
@@ -65,48 +97,43 @@ export default function LoginScreen() {
     ).start();
   }, [fadeIn, floatY]);
 
-const ROLE_TO_ROUTE = {
-  elderly: "Elder",
-  family: "FamilyMember",
-  supporter: "Supporter",
-};
 
-const handleLogin = async () => {
-  setError("");
-  setSuccess("");
+  const handleLogin = async () => {
+    setError("");
+    setSuccess("");
 
-  if (!phoneNumber || !password) {
-    setError("Vui lòng nhập đủ số điện thoại và mật khẩu.");
-    return;
-  }
-
-  try {
-    setLoading(true);
-    const res = await userService.loginUser({ phoneNumber, password });
-
-    if (!res.success) {
-      setError(res.message || "Đăng nhập thất bại");
+    if (!phoneNumber || !password) {
+      setError("Vui lòng nhập đủ số điện thoại và mật khẩu.");
       return;
     }
 
-    // Lưu token & user
-    if (res.token) await userService.setToken(res.token);
-    if (res.user) await userService.setUser(res.user);
+    try {
+      setLoading(true);
+      const res = await userService.loginUser({ phoneNumber, password });
 
-    setSuccess("Đăng nhập thành công");
+      if (!res.success) {
+        setError(res.message || "Đăng nhập thất bại");
+        return;
+      }
 
-    const routeName = ROLE_TO_ROUTE[res.user?.role] || "DefaultScreen";
+      // Lưu token & user
+      if (res.token) await userService.setToken(res.token);
+      if (res.user) await userService.setUser(res.user);
 
-    nav.reset({
-      index: 0,
-      routes: [{ name: routeName }],
-    });
-  } catch (e) {
-    setError("Có lỗi xảy ra. Thử lại sau.");
-  } finally {
-    setLoading(false);
-  }
-};
+      setSuccess("Đăng nhập thành công");
+
+      const routeName = ROLE_TO_ROUTE[res.user?.role] || "DefaultScreen";
+
+      nav.reset({
+        index: 0,
+        routes: [{ name: routeName }],
+      });
+    } catch (e) {
+      setError("Có lỗi xảy ra. Thử lại sau.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   return (
