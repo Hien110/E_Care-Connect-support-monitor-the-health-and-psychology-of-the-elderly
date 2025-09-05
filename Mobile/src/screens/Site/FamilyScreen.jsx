@@ -12,6 +12,7 @@ import {
 } from "react-native";
 // Sửa lại path cho đúng với dự án của bạn
 import { userService } from "../../services/userService";
+import { useNavigation } from "@react-navigation/native";
 
 /** ========= THEME ========= */
 const C = {
@@ -97,6 +98,7 @@ export default function EnhancedHealthAppRN() {
   const [activeTimeframe, setActiveTimeframe] = useState("today");
   const [me, setMe] = useState(null);
   const [loading, setLoading] = useState(true);
+  const nav = useNavigation();
 
   /** ======= DATA ======= */
   const features = useMemo(
@@ -189,7 +191,7 @@ export default function EnhancedHealthAppRN() {
             </View>
             <View style={styles.ketNoiPill}>
               <Text style={{ color: "#d1fae5", marginRight: 6 }}>📶</Text>
-              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 12 }}>Kết nối</Text>
+              <Text onPress={() => nav.navigate("FindPeople")} style={{ color: "#fff", fontWeight: "600", fontSize: 12 }}>Kết nối</Text>
             </View>
           </View>
           <Text style={styles.updated}>🕒 Cập nhật: Hôm nay, 18:30</Text>

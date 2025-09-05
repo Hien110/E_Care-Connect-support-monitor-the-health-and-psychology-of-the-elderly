@@ -1,95 +1,291 @@
-import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, StatusBar, Modal } from "react-native";
+import { useState, useEffect, useCallback, memo } from "react";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, StatusBar, Modal, Image, Alert } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { userService } from '../../services/userService';
+import { relationshipService } from '../../services/relationshipService';
 
-const FindPeopleScreen = () => {
+const relationships = ['Con cái', 'Vợ/Chồng', 'Anh/Chị/Em', 'Bố/Mẹ', 'Cháu', 'Người thân', 'Bạn bè', 'Người chăm sóc'];
+
+// Memoized Relationship Option Component
+const RelationshipOption = memo(({ relationship, isSelected, onPress }) => (
+  <TouchableOpacity
+    style={styles.relationshipOption}
+    onPress={() => onPress(relationship)}
+    activeOpacity={0.7}
+  >
+    <View style={styles.radioContainer}>
+      <View
+        style={[
+          styles.radioOuter,
+          isSelected && styles.radioOuterSelected,
+        ]}
+      >
+        <View
+          style={[
+            styles.radioInner,
+            { opacity: isSelected ? 1 : 0 }
+          ]}
+        />
+      </View>
+    </View>
+    <Text style={styles.relationshipText}>{relationship}</Text>
+  </TouchableOpacity>
+));
+
+const ConfirmConnectionModal = ({ selectedUser, showConfirmModal, setShowConfirmModal, selectedRelationship, handleRelationshipChange, handleConfirmConnection, handleCancelConnection }) => (
+  <Modal
+    visible={showConfirmModal}
+    transparent={true}
+    animationType="slide"
+    onRequestClose={() => setShowConfirmModal(false)}
+  >
+    <View style={styles.modalContainer}>
+      <View style={styles.modalContent}>
+        {/* Avatar Section */}
+        <View style={styles.avatarSection}>
+          <View style={styles.largeAvatar}>
+            {selectedUser?.avatar && selectedUser.avatar.startsWith('http') ? (
+              <Image
+                source={{ uri: selectedUser.avatar }}
+                style={styles.largeAvatarImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.largeAvatarPlaceholder, { backgroundColor: "#FFB6C1" }]}>
+                <Text style={styles.largeAvatarText}>
+                  {selectedUser?.avatar || selectedUser?.name?.charAt(0).toUpperCase() || "N"}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Title */}
+        <Text style={styles.modalTitle}>Xác nhận kết nối</Text>
+
+        {/* Subtitle */}
+        <Text style={styles.modalSubtitle}>Bạn muốn kết nối với</Text>
+
+        {/* User Info */}
+        <View style={styles.userInfoSection}>
+          <Text style={styles.userNameModal}>{selectedUser?.name || "Nguyễn Thị Mai"}</Text>
+          <Text style={styles.userDetailsModal}>
+            {selectedUser?.age || 68} tuổi • {selectedUser?.location || "Quận 1, TP.HCM"}
+          </Text>
+        </View>
+
+        {/* Relationship Selection */}
+        <View style={styles.relationshipSection}>
+          <Text style={styles.relationshipTitle}>Mối quan hệ với bạn:</Text>
+          <ScrollView
+            style={styles.relationshipOptions}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {relationships.map((relationship) => (
+              <RelationshipOption
+                key={relationship}
+                relationship={relationship}
+                isSelected={selectedRelationship === relationship}
+                onPress={handleRelationshipChange}
+              />
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={handleConfirmConnection}
+          >
+            <Text style={styles.confirmButtonText}>Xác nhận</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={handleCancelConnection}
+          >
+            <Text style={styles.cancelButtonText}>Hủy</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
+);
+
+const ConnectionSuccessModal = ({ showSuccessModal, selectedUser, selectedRelationship, handleCloseSuccess }) => (
+  <Modal
+    visible={showSuccessModal}
+    transparent={true}
+    animationType="fade"
+    onRequestClose={handleCloseSuccess}
+  >
+    <View style={styles.modalContainer}>
+      <View style={styles.successModalContent}>
+        {/* Success Icon */}
+        <View style={styles.successIcon}>
+          <Icon name="checkmark" size={40} color="white" />
+        </View>
+
+        {/* Title */}
+        <Text style={styles.successTitle}>Đã xác nhận kết nối</Text>
+
+        {/* Subtitle */}
+        <Text style={styles.successSubtitle}>Yêu cầu kết nối với</Text>
+
+        {/* User Info */}
+        <View style={styles.successUserInfo}>
+          <Text style={styles.successUserName}>{selectedUser?.name || "Nguyễn Thị Mai"}</Text>
+          <Text style={styles.successUserRelationship}>({selectedRelationship})</Text>
+        </View>
+
+        {/* Pending Approval Notice */}
+        <View style={styles.pendingNotice}>
+          <View style={styles.pendingNoticeHeader}>
+            <View style={styles.noticeIcon}>
+              <Icon name="information-circle" size={16} color="white" />
+            </View>
+            <Text style={styles.noticeTitle}>Chờ duyệt yêu cầu</Text>
+          </View>
+          <Text style={styles.noticeText}>
+            Yêu cầu kết nối đã được gửi. Bạn sẽ nhận được thông báo khi yêu cầu được duyệt.
+          </Text>
+        </View>
+
+        {/* Close Button */}
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={handleCloseSuccess}
+        >
+          <Text style={styles.closeButtonText}>Đóng</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+);
+
+const FindPeopleScreen = ({ navigation }) => {
   const [searchText, setSearchText] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [selectedRelationship, setSelectedRelationship] = useState("Ông/Bà");
+  const [selectedRelationship, setSelectedRelationship] = useState("Con cái");
+  const [users, setUsers] = useState([]);
+  const [originalUsers, setOriginalUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const users = [
-    {
-      id: 1,
-      name: "Nguyễn Thị Mai",
-      age: 68,
-      location: "Quận 1, TP.HCM",
-      status: "Tốt",
-      statusColor: "#4CAF50",
-      lastSeen: "2 giờ trước",
-      avatar: "N",
-      avatarBg: "#FFB6C1",
-      verified: true,
-    },
-    {
-      id: 2,
-      name: "Trần Văn Hùng",
-      age: 72,
-      location: "Quận 3, TP.HCM",
-      status: "Bình thường",
-      statusColor: "#FF9800",
-      lastSeen: "1 ngày trước",
-      avatar: "T",
-      avatarBg: "#ADD8E6",
-      verified: true,
-    },
-    {
-      id: 3,
-      name: "Lê Thị Hoa",
-      age: 75,
-      location: "Quận 7, TP.HCM",
-      status: "Cần chú ý",
-      statusColor: "#F44336",
-      lastSeen: "3 giờ trước",
-      avatar: "L",
-      avatarBg: "#DDA0DD",
-      verified: false,
-    },
-    {
-      id: 4,
-      name: "Phạm Minh Tuấn",
-      age: 70,
-      location: "Quận 10, TP.HCM",
-      status: "Tốt",
-      statusColor: "#4CAF50",
-      lastSeen: "5 giờ trước",
-      avatar: "P",
-      avatarBg: "#90EE90",
-      verified: true,
-    },
-  ];
+  const relationships = ['Con cái', 'Vợ/Chồng', 'Anh/Chị/Em', 'Bố/Mẹ', 'Cháu', 'Người thân', 'Bạn bè', 'Người chăm sóc'];
 
-  const relationships = ["Ông/Bà", "Bố/Mẹ", "Chú/Cô/Dì/Bác", "Người thân khác"];
+  const relationshipMapping = {
+    'Con cái': 'child',
+    'Vợ/Chồng': 'spouse',
+    'Anh/Chị/Em': 'sibling',
+    'Bố/Mẹ': 'parent',
+    'Cháu': 'grandchild',
+    'Người thân': 'relative',
+    'Bạn bè': 'friend',
+    'Người chăm sóc': 'caregiver'
+  };
 
-  const handleConnect = (user) => {
+  // Gọi API lấy danh sách người già khi component mount
+  useEffect(() => {
+    const fetchElderlyUsers = async () => {
+      try {
+        setLoading(true);
+        const result = await userService.getAllElderly();
+        if (result.success) {
+          const transformedUsers = result.data.map((user, index) => ({
+            id: user._id,
+            name: user.fullName,
+            age: user.dateOfBirth ? new Date().getFullYear() - new Date(user.dateOfBirth).getFullYear() : 65,
+            location: user.address || "Chưa cập nhật",
+            avatar: user.avatar,
+          }));
+          setUsers(transformedUsers);
+          setOriginalUsers(transformedUsers);
+        } else {
+          console.error('Lỗi khi lấy danh sách người già:', result.message);
+        }
+      } catch (error) {
+        console.error('Lỗi khi gọi API:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchElderlyUsers();
+  }, []);
+
+  // Tìm kiếm realtime
+  useEffect(() => {
+    if (searchText.trim() === '') {
+      setUsers([]);
+    } else {
+      const filteredUsers = originalUsers.filter(user =>
+        user.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+      setUsers(filteredUsers);
+    }
+  }, [searchText, originalUsers]);
+
+  const handleConnect = useCallback((user) => {
     setSelectedUser(user);
     setShowConfirmModal(true);
-  };
+  }, []);
 
-  const handleConfirmConnection = () => {
-    // Xử lý logic xác nhận kết nối ở đây
-    console.log(`Kết nối với ${selectedUser.name} với mối quan hệ: ${selectedRelationship}`);
+  const handleRelationshipChange = useCallback((relationship) => {
+    setSelectedRelationship(relationship);
+  }, []);
+
+  const handleConfirmConnection = useCallback(async () => {
+    if (!selectedUser || !selectedRelationship) {
+      Alert.alert('Lỗi', 'Vui lòng chọn mối quan hệ');
+      return;
+    }
+
+    try {
+      const englishRelationship = relationshipMapping[selectedRelationship];
+      const result = await relationshipService.createRelationship({
+        elderlyId: selectedUser.id,
+        relationship: englishRelationship
+      });
+
+      if (result.success) {
+        setShowConfirmModal(false);
+        setShowSuccessModal(true);
+      } else {
+        Alert.alert('Lỗi', result.message);
+      }
+    } catch (error) {
+      Alert.alert('Lỗi', 'Có lỗi xảy ra khi gửi yêu cầu kết nối');
+      console.error('Create relationship error:', error);
+    }
+  }, [selectedUser, selectedRelationship]);
+
+  const handleCancelConnection = useCallback(() => {
     setShowConfirmModal(false);
-    setShowSuccessModal(true);
-  };
+  }, []);
 
-  const handleCancelConnection = () => {
-    setShowConfirmModal(false);
-  };
-
-  const handleCloseSuccess = () => {
+  const handleCloseSuccess = useCallback(() => {
     setShowSuccessModal(false);
-  };
+  }, []);
 
   const renderUserItem = (user) => (
     <View key={user.id} style={styles.userItem}>
       <View style={styles.userInfo}>
-        <View style={[styles.avatar, { backgroundColor: user.avatarBg }]}>
-          <Text style={styles.avatarText}>{user.avatar}</Text>
-          {user.verified && (
-            <View style={styles.verifiedBadgeSmall}>
-              <Icon name="checkmark-circle" size={16} color="#2196F3" />
+        <View style={styles.avatar}>
+          {user.avatar && user.avatar.startsWith('http') ? (
+            <Image
+              source={{ uri: user.avatar }}
+              style={styles.avatarImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.avatarPlaceholder, { backgroundColor: "#FFB6C1" }]}>
+              <Text style={styles.avatarText}>
+                {user.avatar || user.name.charAt(0).toUpperCase()}
+              </Text>
             </View>
           )}
         </View>
@@ -99,17 +295,10 @@ const FindPeopleScreen = () => {
           <Text style={styles.userLocation}>
             {user.age} tuổi • {user.location}
           </Text>
-
-          <View style={styles.statusRow}>
-            <View style={[styles.statusDot, { backgroundColor: user.statusColor }]} />
-            <Text style={[styles.statusText, { color: user.statusColor }]}>{user.status}</Text>
-            <Icon name="time-outline" size={14} color="#999" style={styles.timeIcon} />
-            <Text style={styles.timeText}>{user.lastSeen}</Text>
-          </View>
         </View>
       </View>
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.connectButton}
         onPress={() => handleConnect(user)}
       >
@@ -118,147 +307,13 @@ const FindPeopleScreen = () => {
     </View>
   );
 
-  const ConfirmConnectionModal = () => (
-    <Modal
-      visible={showConfirmModal}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={() => setShowConfirmModal(false)}
-    >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          {/* Avatar Section */}
-          <View style={styles.avatarSection}>
-            <View style={[styles.largeAvatar, { backgroundColor: selectedUser?.avatarBg || "#FFB6C1" }]}>
-              <Text style={styles.largeAvatarText}>{selectedUser?.avatar || "N"}</Text>
-              {selectedUser?.verified && (
-                <View style={styles.verificationBadge}>
-                  <Icon name="checkmark" size={12} color="white" />
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Title */}
-          <Text style={styles.modalTitle}>Xác nhận kết nối</Text>
-
-          {/* Subtitle */}
-          <Text style={styles.modalSubtitle}>Bạn muốn kết nối với</Text>
-
-          {/* User Info */}
-          <View style={styles.userInfoSection}>
-            <Text style={styles.userNameModal}>{selectedUser?.name || "Nguyễn Thị Mai"}</Text>
-            <Text style={styles.userDetailsModal}>
-              {selectedUser?.age || 68} tuổi • {selectedUser?.location || "Quận 1, TP.HCM"}
-            </Text>
-          </View>
-
-          {/* Relationship Selection */}
-          <View style={styles.relationshipSection}>
-            <Text style={styles.relationshipTitle}>Mối quan hệ với bạn:</Text>
-            <View style={styles.relationshipOptions}>
-              {relationships.map((relationship) => (
-                <TouchableOpacity
-                  key={relationship}
-                  style={styles.relationshipOption}
-                  onPress={() => setSelectedRelationship(relationship)}
-                >
-                  <View style={styles.radioContainer}>
-                    <View
-                      style={[
-                        styles.radioOuter,
-                        selectedRelationship === relationship && styles.radioOuterSelected,
-                      ]}
-                    >
-                      {selectedRelationship === relationship && (
-                        <View style={styles.radioInner} />
-                      )}
-                    </View>
-                  </View>
-                  <Text style={styles.relationshipText}>{relationship}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={handleConfirmConnection}
-            >
-              <Text style={styles.confirmButtonText}>Xác nhận</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={handleCancelConnection}
-            >
-              <Text style={styles.cancelButtonText}>Hủy</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const ConnectionSuccessModal = () => (
-    <Modal
-      visible={showSuccessModal}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={handleCloseSuccess}
-    >
-      <View style={styles.modalContainer}>
-        <View style={styles.successModalContent}>
-          {/* Success Icon */}
-          <View style={styles.successIcon}>
-            <Icon name="checkmark" size={40} color="white" />
-          </View>
-
-          {/* Title */}
-          <Text style={styles.successTitle}>Đã xác nhận kết nối</Text>
-
-          {/* Subtitle */}
-          <Text style={styles.successSubtitle}>Yêu cầu kết nối với</Text>
-
-          {/* User Info */}
-          <View style={styles.successUserInfo}>
-            <Text style={styles.successUserName}>{selectedUser?.name || "Nguyễn Thị Mai"}</Text>
-            <Text style={styles.successUserRelationship}>({selectedRelationship})</Text>
-          </View>
-
-          {/* Pending Approval Notice */}
-          <View style={styles.pendingNotice}>
-            <View style={styles.pendingNoticeHeader}>
-              <View style={styles.noticeIcon}>
-                <Icon name="information-circle" size={16} color="white" />
-              </View>
-              <Text style={styles.noticeTitle}>Chờ duyệt yêu cầu</Text>
-            </View>
-            <Text style={styles.noticeText}>
-              Yêu cầu kết nối đã được gửi. Bạn sẽ nhận được thông báo khi yêu cầu được duyệt.
-            </Text>
-          </View>
-
-          {/* Close Button */}
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleCloseSuccess}
-          >
-            <Text style={styles.closeButtonText}>Đóng</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#2196F3" />
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Tìm kiếm người thân</Text>
@@ -270,30 +325,75 @@ const FindPeopleScreen = () => {
           <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm theo tên hoặc địa chỉ..."
+            placeholder="Tìm kiếm theo tên..."
             placeholderTextColor="#999"
             value={searchText}
             onChangeText={setSearchText}
           />
+          {searchText.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => setSearchText('')}
+            >
+              <Icon name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
       {/* Results Header */}
       <View style={styles.resultsHeader}>
-        <Text style={styles.resultsTitle}>Kết quả tìm kiếm</Text>
-        <Text style={styles.resultsCount}>{users.length} người</Text>
+        <Text style={styles.resultsTitle}>
+          {searchText.trim() ? `Kết quả tìm kiếm "${searchText}"` : 'Tìm kiếm người thân'}
+        </Text>
+        <Text style={styles.resultsCount}>
+          {loading ? "Đang tải..." : searchText.trim() ? `${users.length} người` : ''}
+        </Text>
       </View>
 
       {/* User List */}
       <ScrollView style={styles.userList} showsVerticalScrollIndicator={false}>
-        {users.map(renderUserItem)}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Đang tải danh sách người già...</Text>
+          </View>
+        ) : !searchText.trim() ? (
+          <View style={styles.emptyContainer}>
+            <Icon name="search" size={48} color="#ccc" style={styles.searchIconLarge} />
+            <Text style={styles.emptyText}>Nhập tên để tìm kiếm người thân</Text>
+            <Text style={styles.emptySubtext}>Bắt đầu nhập tên người bạn muốn tìm</Text>
+          </View>
+        ) : users.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Icon name="search" size={48} color="#ccc" style={styles.searchIconLarge} />
+            <Text style={styles.emptyText}>
+              Không tìm thấy người nào với tên "{searchText}"
+            </Text>
+            <Text style={styles.emptySubtext}>Thử tìm với tên khác</Text>
+          </View>
+        ) : (
+          users.map(renderUserItem)
+        )}
       </ScrollView>
 
       {/* Confirm Connection Modal */}
-      <ConfirmConnectionModal />
+      <ConfirmConnectionModal
+        selectedUser={selectedUser}
+        showConfirmModal={showConfirmModal}
+        setShowConfirmModal={setShowConfirmModal}
+        selectedRelationship={selectedRelationship}
+        handleRelationshipChange={handleRelationshipChange}
+        handleConfirmConnection={handleConfirmConnection}
+        handleCancelConnection={handleCancelConnection}
+      />
 
       {/* Success Connection Modal */}
-      <ConnectionSuccessModal />
+      <ConnectionSuccessModal
+        showSuccessModal={showSuccessModal}
+        selectedUser={selectedUser}
+        selectedRelationship={selectedRelationship}
+        handleCloseSuccess={handleCloseSuccess}
+      />
     </SafeAreaView>
   );
 };
@@ -344,6 +444,10 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginRight: 12,
   },
+  clearButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
   searchInput: {
     flex: 1,
     fontSize: 16,
@@ -391,16 +495,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
     position: "relative",
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 25,
+  },
+  avatarPlaceholder: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
   },
   avatarText: {
     fontSize: 20,
     fontWeight: "600",
     color: "#333",
-  },
-  verifiedBadgeSmall: {
-    position: "absolute",
-    bottom: -2,
-    right: -2,
   },
   userDetails: {
     flex: 1,
@@ -416,28 +528,6 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 6,
   },
-  statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "500",
-    marginRight: 12,
-  },
-  timeIcon: {
-    marginRight: 4,
-  },
-  timeText: {
-    fontSize: 12,
-    color: "#999",
-  },
   connectButton: {
     backgroundColor: "#2196F3",
     paddingHorizontal: 16,
@@ -449,7 +539,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  // Modal styles
   modalContainer: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -464,6 +553,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 400,
     alignItems: "center",
+    minHeight: 500,
   },
   successModalContent: {
     backgroundColor: "white",
@@ -484,22 +574,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     position: "relative",
+    overflow: "hidden",
+  },
+  largeAvatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 40,
+  },
+  largeAvatarPlaceholder: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
   },
   largeAvatarText: {
     fontSize: 32,
     fontWeight: "600",
     color: "#333",
-  },
-  verificationBadge: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#2196F3",
-    justifyContent: "center",
-    alignItems: "center",
   },
   modalTitle: {
     fontSize: 20,
@@ -537,14 +629,18 @@ const styles = StyleSheet.create({
   },
   relationshipOptions: {
     width: "100%",
+    maxHeight: 200,
   },
   relationshipOption: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
+    paddingVertical: 4,
   },
   radioContainer: {
     marginRight: 12,
+    width: 20,
+    height: 20,
   },
   radioOuter: {
     width: 20,
@@ -554,6 +650,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "transparent",
   },
   radioOuterSelected: {
     borderColor: "#2196F3",
@@ -564,6 +661,7 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: "white",
+    position: "absolute",
   },
   relationshipText: {
     fontSize: 16,
@@ -595,7 +693,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  // Success Modal styles
   successIcon: {
     width: 80,
     height: 80,
@@ -673,6 +770,37 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 50,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 50,
+  },
+  searchIconLarge: {
+    marginBottom: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#999",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#ccc",
+    textAlign: "center",
   },
 });
 

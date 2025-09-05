@@ -206,6 +206,26 @@ export const userService = {
       };
     }
   },
-};
 
+  // Lấy danh sách người già
+  getAllElderly: async () => {
+    try {
+      const response = await api.get('/users/get-elderly', {
+        headers: {
+          Authorization: `Bearer ${await userService.getToken()}`,
+        },
+      });
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data.message || error.message,
+      };
+    }
+  },
+}
 export default userService;
