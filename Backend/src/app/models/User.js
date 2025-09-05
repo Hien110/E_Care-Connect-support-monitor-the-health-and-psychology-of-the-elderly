@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
     },  // Mã hóa
     role: {
       type: String,
-      enum: ["elderly", "family", "supporter", "doctor", "admin"],
+      enum: ["elderly", "family", " ", "doctor", "admin"],
       required: true,
     },
     fullName: {
