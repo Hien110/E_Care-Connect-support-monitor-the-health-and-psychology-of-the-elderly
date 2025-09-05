@@ -160,68 +160,88 @@ const UserController = {
   }
 },
 
- // B4: complete profile -> fullName, dateOfBirth, gender => set active + hash password
+ // B4: complete profile -> đọc session từ Redis, tạo user và xoá session
   completeProfile: async (req, res) => {
   try {
-    const { fullName, dateOfBirth, gender, password } = req.body;
-    if (!fullName || !gender || !password) {
+    const { phoneNumber, fullName, dateOfBirth, gender, password } = req.body;
+    if (!phoneNumber || !fullName || !gender || !password) {
       return res
         .status(400)
         .json({ success: false, message: "Thiếu dữ liệu bắt buộc" });
     }
 
-    // tìm user qua identityCard (đã lưu ở bước setIdentity)
-    const user = await User.findOne({ identityCard: { $exists: true, $ne: null } })
-      .sort({ createdAt: -1 }); // lấy user mới nhất nếu có nhiều
-    
-    if (!user) {
+    const key = `tempRegister:${phoneNumber}`;
+    const dataStr = await redis.get(key);
+    if (!dataStr) {
       return res
         .status(404)
-        .json({ success: false, message: "Không tìm thấy user" });
+        .json({ success: false, message: "Session đăng ký đã hết hạn" });
     }
 
-    // kiểm tra OTP + CCCD
-    if (user.otp?.code) {
+    const temp = JSON.parse(dataStr);
+    if (!temp.otpVerified) {
       return res
         .status(400)
         .json({ success: false, message: "Vui lòng xác thực OTP trước" });
     }
-    if (!user.identityCard) {
+    if (!temp.identityCard) {
       return res
         .status(400)
         .json({ success: false, message: "Vui lòng nhập CCCD trước" });
     }
 
-    // hash password & update profile
-    const hashed = await bcrypt.hash(password, 12);
-    user.password = hashed;
-    user.fullName = fullName;
-    user.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
-    user.gender = gender;
-    user.isActive = true;
-    user.avatar = user.avatar || avatarDefault;
+    // Safety checks
+    const existedActive = await User.findOne({ phoneNumber, isActive: true });
+    if (existedActive) {
+      return res
+        .status(409)
+        .json({ success: false, message: "Số điện thoại đã được đăng ký" });
+    }
 
-    // tạo token mới
+    const identityUsed = await User.findOne({ identityCard: temp.identityCard });
+    if (identityUsed) {
+      return res
+        .status(409)
+        .json({ success: false, message: "CCCD đã được đăng ký" });
+    }
+
+    const hashed = await bcrypt.hash(password, 12);
+
+    const user = new User({
+      phoneNumber,
+      password: hashed,
+      role: temp.role,
+      fullName,
+      gender,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      identityCard: temp.identityCard,
+      isActive: true,
+      avatar: avatarDefault,
+    });
+
+    const savedUser = await user.save();
+
     const token = jwt.sign(
-      { userId: user._id, phoneNumber: user.phoneNumber, role: user.role },
+      { userId: savedUser._id, phoneNumber: savedUser.phoneNumber, role: savedUser.role },
       process.env.JWT_SECRET_KEY || "secret",
       { expiresIn: "7d" }
     );
 
-    await user.save();
+    // Clear Redis session
+    await redis.del(key);
 
     return res.status(200).json({
       success: true,
       message: "Hoàn tất đăng ký",
       data: {
         user: {
-          _id: user._id,
-          phoneNumber: user.phoneNumber,
-          role: user.role,
-          fullName: user.fullName,
-          dateOfBirth: user.dateOfBirth,
-          gender: user.gender,
-          avatar: user.avatar,
+          _id: savedUser._id,
+          phoneNumber: savedUser.phoneNumber,
+          role: savedUser.role,
+          fullName: savedUser.fullName,
+          dateOfBirth: savedUser.dateOfBirth,
+          gender: savedUser.gender,
+          avatar: savedUser.avatar,
         },
         token,
       },
