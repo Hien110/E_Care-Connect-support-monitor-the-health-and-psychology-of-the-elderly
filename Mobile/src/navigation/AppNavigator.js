@@ -11,6 +11,8 @@ import VerifySMSScreen from '../screens/Auth/VerifySMSScreen';
 import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SuccessScreen from '../screens/Site/SuccessScreen';
+import FindPeopleScreen from '../screens/Connect-family/FindPeopleScreen';
+import FamilyConnectionScreen from '../screens/Connect-family/FamilyConnectionScreen';
 
 // HOC footer
 import withFooter from '../components/withFooter';
@@ -20,7 +22,7 @@ const Stack = createStackNavigator();
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Profile">
+      <Stack.Navigator initialRouteName="Login">
         <Stack.Screen
           name="Login"
           component={LoginScreen}
@@ -67,6 +69,16 @@ const AppNavigator = () => {
         <Stack.Screen
           name="Profile"
           component={ProfileScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FindPeople"
+          component={FindPeopleScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FamilyConnection"
+          component={FamilyConnectionScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
