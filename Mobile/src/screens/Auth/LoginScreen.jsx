@@ -65,35 +65,49 @@ export default function LoginScreen() {
     ).start();
   }, [fadeIn, floatY]);
 
-  const handleLogin = async () => {
-    setError("");
-    setSuccess("");
+const ROLE_TO_ROUTE = {
+  elderly: "Elder",
+  family: "FamilyMember",
+  supporter: "Supporter",
+};
 
-    if (!phoneNumber || !password) {
-      setError("Vui lòng nhập đủ số điện thoại và mật khẩu.");
+const handleLogin = async () => {
+  setError("");
+  setSuccess("");
+
+  if (!phoneNumber || !password) {
+    setError("Vui lòng nhập đủ số điện thoại và mật khẩu.");
+    return;
+  }
+
+  try {
+    setLoading(true);
+    const res = await userService.loginUser({ phoneNumber, password });
+
+    if (!res.success) {
+      setError(res.message || "Đăng nhập thất bại");
       return;
     }
 
-    try {
-      setLoading(true);
-      const res = await userService.loginUser({ phoneNumber, password });
-      if (!res.success) {
-        setError(res.message || "Đăng nhập thất bại");
-        return;
-      }
+    // Lưu token & user
+    if (res.token) await userService.setToken(res.token);
+    if (res.user) await userService.setUser(res.user);
 
-      // Lưu vĩnh viễn token & user
-      if (res.token) await userService.setToken(res.token);
-      if (res.user) await userService.setUser(res.user);
+    setSuccess("Đăng nhập thành công");
 
-      setSuccess("Đăng nhập thành công");
-      nav.reset({ index: 0, routes: [{ name: "Home" }] });
-    } catch (e) {
-      setError("Có lỗi xảy ra. Thử lại sau.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const routeName = ROLE_TO_ROUTE[res.user?.role] || "DefaultScreen";
+
+    nav.reset({
+      index: 0,
+      routes: [{ name: routeName }],
+    });
+  } catch (e) {
+    setError("Có lỗi xảy ra. Thử lại sau.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <SafeAreaView style={styles.container}>
