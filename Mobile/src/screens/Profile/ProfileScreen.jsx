@@ -77,7 +77,7 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const goBack = () => navigation?.goBack?.();
+  const goBack = () => navigation.navigate('PersonalInfo');
 
   const onEditAvatar = () => {
     // TODO: Mở ActionSheet chọn ảnh từ thư viện / camera

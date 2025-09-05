@@ -14,17 +14,15 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import userService from '../../services/userService';
-import FooterNav from '../../components/FooterNav'; 
+import FooterNav from '../../components/FooterNav';
 
 const PRIMARY = '#0046FF';
+const PRIMARY_LIGHT = '#2F66FF';
 const BG = '#F2F3F5';
 const WHITE = '#FFFFFF';
 const TEXT = '#111827';
 const SUB = '#8A8F98';
 const LIGHT = '#EAF2FF';
-const RED = '#EF4444';
-const ORANGE = '#FB923C';
-const YELLOW = '#F59E0B';
 
 const AVATAR_FALLBACK =
   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-mAf0Q5orw3lJzIC2j6NFU6Ik2VNcgB.png';
@@ -44,13 +42,9 @@ const PersonalInfoScreen = ({ navigation }) => {
       setError('');
       setLoading(true);
       const res = await userService.getUserInfo?.();
-      if (res?.success) {
-        setUser(res.data || null);
-      } else {
-        setUser(null);
-        setError(res?.message || 'Không tải được thông tin người dùng.');
-      }
-    } catch (e) {
+      if (res?.success) setUser(res.data || null);
+      else { setUser(null); setError(res?.message || 'Không tải được thông tin người dùng.'); }
+    } catch {
       setUser(null);
       setError('Có lỗi khi tải dữ liệu. Vui lòng thử lại.');
     } finally {
@@ -58,9 +52,7 @@ const PersonalInfoScreen = ({ navigation }) => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+  useEffect(() => { fetchUser(); }, [fetchUser]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -88,17 +80,21 @@ const PersonalInfoScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  const heartRate = user?.heartRate ?? '—';
-  const calories  = user?.calories  ?? '—';
-  const weight    = user?.weight    ?? '—';
-
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={PRIMARY} />
+    <SafeAreaView style={[styles.container, { backgroundColor: WHITE }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
 
       {/* Hero + Header + Avatar */}
       <View style={styles.heroWrapper}>
         <View style={styles.headerBlue}>
+          {/* lớp bubble */}
+          <View pointerEvents="none" style={styles.bubbleLayer}>
+            <View style={[styles.bubble, styles.bubbleA]} />
+            <View style={[styles.bubble, styles.bubbleB]} />
+            <View style={[styles.bubble, styles.bubbleC]} />
+            <View style={[styles.bubble, styles.bubbleD]} />
+          </View>
+
           <View style={styles.headerRow}>
             <TouchableOpacity style={styles.backBtn} onPress={goBack}>
               <Icon name="arrow-back" size={22} color={WHITE} />
@@ -108,8 +104,10 @@ const PersonalInfoScreen = ({ navigation }) => {
           </View>
         </View>
 
+        {/* mép bo cong trắng để chuyển tiếp êm */}
         <View style={styles.heroBottom} />
 
+        {/* avatar đè mép xanh–trắng */}
         <View style={styles.avatarWrap}>
           {loading ? (
             <View style={[styles.avatar, { alignItems: 'center', justifyContent: 'center' }]}>
@@ -128,33 +126,12 @@ const PersonalInfoScreen = ({ navigation }) => {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={{ paddingBottom: 16 }}
       >
-        {/* Stats row */}
-        <View style={styles.stats}>
-          <View style={styles.statItem}>
-            <Icon name="heart" size={24} color={RED} />
-            <Text style={styles.statLabel}>Nhịp tim</Text>
-            <Text style={styles.statValue}>{heartRate}</Text>
-          </View>
+        {/* khoảng đệm thay thế cho stats để bố cục vẫn thoáng */}
+        <View style={styles.topSpacer} />
 
-          <View style={styles.vDivider} />
-
-          <View style={styles.statItem}>
-            <Icon name="flame" size={24} color={ORANGE} />
-            <Text style={styles.statLabel}>Calo</Text>
-            <Text style={styles.statValue}>{calories}</Text>
-          </View>
-
-          <View style={styles.vDivider} />
-
-          <View style={styles.statItem}>
-            <MaterialIcons name="monitor-weight" size={24} color={YELLOW} />
-            <Text style={styles.statLabel}>Cân nặng</Text>
-            <Text style={styles.statValue}>{weight}</Text>
-          </View>
-        </View>
-
-        {/* Error state (nếu có) */}
+        {/* Error (nếu có) */}
         {!!error && (
           <View style={styles.errorBox}>
             <Icon name="alert-circle-outline" size={18} color="#E11D48" />
@@ -173,7 +150,7 @@ const PersonalInfoScreen = ({ navigation }) => {
             icon="person"
             color={PRIMARY}
             title="Thông tin cá nhân"
-            onPress={() => nav.navigate("Profile")}
+            onPress={() => nav.navigate('Profile')}
           />
           <MenuItem
             bg="#EAF7F0"
@@ -202,8 +179,6 @@ const PersonalInfoScreen = ({ navigation }) => {
 
         <View style={{ height: 24 }} />
       </ScrollView>
-      
-      
     </SafeAreaView>
   );
 };
@@ -213,12 +188,47 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
 
   heroWrapper: { position: 'relative', backgroundColor: BG },
-  headerBlue: { height: HEADER_H, backgroundColor: PRIMARY, justifyContent: 'flex-start', paddingTop: 8 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 8 },
+
+  headerBlue: {
+    height: HEADER_H,
+    backgroundColor: PRIMARY,
+    justifyContent: 'flex-start',
+    paddingTop: 8,
+    overflow: 'hidden',
+  },
+
+  bubbleLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
+  },
+  bubble: {
+    position: 'absolute',
+    backgroundColor: PRIMARY_LIGHT,
+    opacity: 0.25,
+    borderRadius: 9999,
+  },
+  bubbleA: { width: 260, height: 260, top: -140, left: -40 },
+  bubbleB: { width: 220, height: 220, top: -100, right: -60, backgroundColor: '#6E94FF', opacity: 0.22 },
+  bubbleC: { width: 280, height: 280, top: -40, left: 120, opacity: 0.18 },
+  bubbleD: { width: 200, height: 200, top: 40, right: 40, opacity: 0.15 },
+
+  headerRow: {
+    zIndex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, textAlign: 'center', color: WHITE, fontSize: 22, fontWeight: '700', marginRight: 40 },
 
-  heroBottom: { backgroundColor: WHITE, height: 44, borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: -18 },
+  heroBottom: {
+    backgroundColor: WHITE,
+    height: 44,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -18,
+  },
 
   avatarWrap: {
     position: 'absolute',
@@ -234,20 +244,12 @@ const styles = StyleSheet.create({
   },
   avatar: { width: '100%', height: '100%', borderRadius: AVATAR / 2 },
 
-  stats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: WHITE,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    justifyContent: 'space-between',
+  /* spacer thay cho stats */
+  topSpacer: {
+    height: 20,           // chỉnh 16–28 tuỳ bạn muốn thoáng cỡ nào
   },
-  statItem: { flex: 1, alignItems: 'center' },
-  statLabel: { fontSize: 12, color: SUB, marginTop: 6, marginBottom: 4 },
-  statValue: { fontSize: 16, fontWeight: '700', color: PRIMARY },
-  vDivider: { width: 1, height: 40, backgroundColor: '#E6E7EA' },
 
-  cardList: { backgroundColor: WHITE, marginTop: 10, paddingHorizontal: 16 },
+  cardList: { backgroundColor: WHITE, paddingHorizontal: 16 },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -278,17 +280,6 @@ const styles = StyleSheet.create({
   errorText: { flex: 1, color: '#9F1239', fontSize: 13 },
   retryBtn: { paddingHorizontal: 8, paddingVertical: 6 },
   retryText: { color: PRIMARY, fontWeight: '700', fontSize: 13 },
-
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: WHITE,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  navItem: { flex: 1, alignItems: 'center', paddingVertical: 8 },
-  navText: { fontSize: 12, color: '#C7C9CE', marginTop: 4 },
 });
 
 export default PersonalInfoScreen;
