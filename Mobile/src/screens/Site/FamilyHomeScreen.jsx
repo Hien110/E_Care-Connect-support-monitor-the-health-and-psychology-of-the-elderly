@@ -255,7 +255,7 @@ export default function EnhancedHealthAppRN() {
               <View style={[styles.iconSquare, { backgroundColor: C.red }]}>
                 <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>❤</Text>
               </View>
-              <Text style={styles.sectionTitle}>Người nhà</Text>
+              <Text style={styles.sectionTitle} onPress={() => nav.navigate("FamilyList_Family")}>Người nhà</Text>
             </View>
             <View style={styles.countPill}>
               <Text style={styles.countPillText}>{familyContacts.length}</Text>

@@ -88,6 +88,23 @@ export const relationshipService = {
     }
   },
 
+  // Lấy các mối quan hệ đã chấp nhận theo familyId
+  getAcceptedRelationshipsByFamilyId: async () => {
+    try {
+      const response = await api.get('/relationships/accepted-family');
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data.message || error.message,
+      };
+    }
+  },
+
   // Hủy mối quan hệ
   cancelRelationship: async (relationshipId) => {
     try {

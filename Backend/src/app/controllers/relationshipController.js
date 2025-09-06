@@ -1,3 +1,4 @@
+const { get } = require("mongoose");
 const Relationship = require("../models/Relationship.js");
 const User = require("../models/User.js");
 
@@ -114,7 +115,7 @@ const RelationshipController = {
       const relationships = await Relationship.find({
         elderly: userId,
         status: 'pending'
-      }).populate('elderly', 'fullName').populate('requestedBy', 'fullName avatar phoneNumber');
+      }).populate('elderly', 'fullName avatar phoneNumber').populate('requestedBy', 'fullName avatar phoneNumber');
       return res.status(200).json({
         success: true,
         data: relationships
@@ -180,7 +181,7 @@ const RelationshipController = {
           message: "Không tìm thấy mối quan hệ"
         });
       }
-      if (relationship.elderly.toString() !== userId) {
+      if (relationship.elderly.toString() !== userId && relationship.family.toString() !== userId) {
         return res.status(403).json({
           success: false,
           message: "Bạn không có quyền thực hiện hành động này"
@@ -215,7 +216,28 @@ const RelationshipController = {
       const relationships = await Relationship.find({
         elderly: userId,
         status: 'accepted'
-      }).populate('elderly', 'fullName').populate('requestedBy', 'fullName avatar phoneNumber');
+      }).populate('elderly', 'fullName avatar phoneNumber').populate('requestedBy', 'fullName avatar phoneNumber');
+      return res.status(200).json({
+        success: true,
+        data: relationships
+      });
+    } catch (error) {
+      console.error("Error fetching relationships:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  },
+
+  getAcceptRelationshipByFamilyId: async (req, res) => {
+    try {
+      const userId = req.user.userId; // Lấy từ token JWT
+      const relationships = await Relationship.find({
+        family: userId,
+        status: 'accepted'
+      }).populate('elderly', 'fullName avatar phoneNumber').populate('requestedBy', 'fullName avatar phoneNumber');
+
       return res.status(200).json({
         success: true,
         data: relationships
@@ -241,7 +263,7 @@ const RelationshipController = {
           message: "Không tìm thấy mối quan hệ"
         });
       }
-      if (relationship.elderly.toString() !== userId) {
+      if (relationship.elderly.toString() !== userId && relationship.family.toString() !== userId) {
         return res.status(403).json({
           success: false,
           message: "Bạn không có quyền thực hiện hành động này"

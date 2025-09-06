@@ -18,6 +18,7 @@ import DefaultScreen from '../screens/Error/DefaultScreen';
 import FindPeopleScreen from '../screens/Connect-family/FindPeopleScreen';
 import FamilyConnectionScreen from '../screens/Connect-family/FamilyConnectionScreen';
 import FamilyConnectionListScreen from '../screens/Connect-family/FamilyConnectionListScreen';
+import FamilyList_FamilyScreen from '../screens/Connect-family/FamilyList_FamilyScreen';
 
 // HOC footer
 import withFooter from '../components/withFooter';
@@ -110,6 +111,11 @@ const AppNavigator = () => {
         <Stack.Screen
           name="FamilyConnectionList"
           component={FamilyConnectionListScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FamilyList_Family"
+          component={FamilyList_FamilyScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

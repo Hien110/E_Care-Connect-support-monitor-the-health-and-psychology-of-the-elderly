@@ -14,5 +14,6 @@ router.put("/request/:relationshipId/reject", RelationshipController.rejectRelat
 router.get("/accepted", RelationshipController.getAcceptRelationshipByUserId);
 router.put("/:relationshipId/cancel", RelationshipController.cancelRelationship);
 router.get("/", RelationshipController.getAllRelationships);
+router.get("/accepted-family", RelationshipController.getAcceptRelationshipByFamilyId);
 
 module.exports = router;
