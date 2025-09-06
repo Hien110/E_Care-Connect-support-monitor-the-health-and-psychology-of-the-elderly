@@ -15,11 +15,9 @@ import PersonalInfoScreen from '../screens/Profile/PersonalInfoScreen.jsx';
 import FamilyMemberHomeScreen from '../screens/Site/FamilyHomeScreen.jsx';
 import SupporterHomeScreen from '../screens/Site/SupporterHomeScreen';
 import DefaultScreen from '../screens/Error/DefaultScreen';
-import FamilyMemberScreen from '../screens/Site/FamilyScreen.jsx';
-import SupporterScreen from '../screens/Site/SupporterScreen.jsx';
-import DefaultScreen from '../screens/Error/DefaultScreen.jsx';
 import FindPeopleScreen from '../screens/Connect-family/FindPeopleScreen';
 import FamilyConnectionScreen from '../screens/Connect-family/FamilyConnectionScreen';
+import FamilyConnectionListScreen from '../screens/Connect-family/FamilyConnectionListScreen';
 
 // HOC footer
 import withFooter from '../components/withFooter';
@@ -107,6 +105,11 @@ const AppNavigator = () => {
         <Stack.Screen
           name="FamilyConnection"
           component={FamilyConnectionScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FamilyConnectionList"
+          component={FamilyConnectionListScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

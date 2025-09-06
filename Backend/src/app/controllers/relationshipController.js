@@ -107,7 +107,160 @@ const RelationshipController = {
     }
   },
 
-  
+  getRequestRelationshipsById: async (req, res) => {
+    try {
+      const userId = req.user.userId; // Lấy từ token JWT
+      const relationships = await Relationship.find({
+        elderly: userId,
+        status: 'pending'
+      }).populate('elderly', 'fullName phoneNumber').populate('requestedBy', 'fullName avatar');
+      return res.status(200).json({
+        success: true,
+        data: relationships
+      });
+    } catch (error) {
+      console.error("Error fetching relationships:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  },
+
+  acceptRelationship: async (req, res) => {
+    try {
+      const { relationshipId } = req.params;
+      const userId = req.user.userId; // Lấy từ token JWT
+      const relationship = await Relationship.findById(relationshipId);
+
+      if (!relationship) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy mối quan hệ"
+        });
+      }
+      if (relationship.elderly.toString() !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Bạn không có quyền thực hiện hành động này"
+        });
+      }
+      if (relationship.status !== 'pending') {
+        return res.status(400).json({
+          success: false,
+          message: "Mối quan hệ không ở trạng thái chờ duyệt"
+        });
+      }
+      relationship.status = 'accepted';
+      relationship.respondedAt = new Date();
+      await relationship.save();
+      return res.status(200).json({
+        success: true,
+        message: "Mối quan hệ đã được chấp nhận",
+        data: relationship
+      });
+    } catch (error) {
+      console.error("Error accepting relationship:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Đã xảy ra lỗi khi chấp nhận mối quan hệ"
+      });
+    }
+  },
+
+  rejectRelationship: async (req, res) => {
+    try {
+      const { relationshipId } = req.params;
+      const userId = req.user.userId; // Lấy từ token JWT
+      const relationship = await Relationship.findById(relationshipId);
+      if (!relationship) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy mối quan hệ"
+        });
+      }
+      if (relationship.elderly.toString() !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Bạn không có quyền thực hiện hành động này"
+        });
+      }
+      if (relationship.status !== 'pending') {
+        return res.status(400).json({
+          success: false,
+          message: "Mối quan hệ không ở trạng thái chờ duyệt"
+        });
+      }
+      relationship.status = 'rejected';
+      relationship.respondedAt = new Date();
+      await relationship.save();
+      return res.status(200).json({
+        success: true,
+        message: "Mối quan hệ đã bị từ chối",
+        data: relationship
+      });
+    } catch (error) {
+      console.error("Error rejecting relationship:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Đã xảy ra lỗi khi từ chối mối quan hệ"
+      });
+    }
+  },
+
+  getAcceptRelationshipByUserId: async (req, res) => {
+    try {
+      const userId = req.user.userId; // Lấy từ token JWT
+      const relationships = await Relationship.find({
+        elderly: userId,
+        status: 'accepted'
+      }).populate('elderly', 'fullName phoneNumber').populate('requestedBy', 'fullName avatar');
+      return res.status(200).json({
+        success: true,
+        data: relationships
+      });
+    } catch (error) {
+      console.error("Error fetching relationships:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  },
+
+  cancelRelationship: async (req, res) => {
+    try {
+      const { relationshipId } = req.params;
+      const userId = req.user.userId; // Lấy từ token JWT
+      const relationship = await Relationship.findById(relationshipId);
+
+      if (!relationship) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy mối quan hệ"
+        });
+      }
+      if (relationship.elderly.toString() !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Bạn không có quyền thực hiện hành động này"
+        });
+      }
+      relationship.status = 'cancelled';
+      await relationship.save();
+      return res.status(200).json({
+        success: true,
+        message: "Đã hủy kết nối thành công"
+      });
+    } catch (error) {
+      console.error("Error canceling relationship:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Đã xảy ra lỗi khi hủy kết nối"
+      });
+    }
+  }
+
 };
 
 module.exports = RelationshipController;
