@@ -14,26 +14,6 @@ export async function getAPIToken() {
   return t;
 }
 
-export async function setAPIToken(token) {
-  inMemoryToken = token || null;
-  if (token) await AsyncStorage.setItem(TOKEN_KEY, token);
-  else await AsyncStorage.removeItem(TOKEN_KEY);
-}
-
-// (tuỳ chọn) Lưu/đọc user để reuse ở UI
-const USER_KEY = "ecare_user";
-export async function setSavedUser(user) {
-  if (user) await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
-  else await AsyncStorage.removeItem(USER_KEY);
-}
-export async function getSavedUser() {
-  const u = await AsyncStorage.getItem(USER_KEY);
-  return u ? JSON.parse(u) : null;
-}
-
-// Base URL của API - thay đổi theo địa chỉ server của bạn
-const BASE_URL = 'http://192.168.1.101:3000/api'; // Thay bằng IP máy bạn
- 
 // Tạo instance axios
 
 const api = axios.create({

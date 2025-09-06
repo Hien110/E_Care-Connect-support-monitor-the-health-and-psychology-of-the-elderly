@@ -15,7 +15,7 @@ router.post("/verify-otp", UserController.verifyOTP);
 //nhập CCCD
 router.put("/set-identity", UserController.setIdentity);
 //hoàn tất hồ sơ
-router.put("/complete-Profile", UserController.completeProfile);
+router.put("/complete-profile", UserController.completeProfile);
 
 // Forgot password routes
 router.post("/forgot-password/send-otp", UserController.sendForgotPasswordOTP);

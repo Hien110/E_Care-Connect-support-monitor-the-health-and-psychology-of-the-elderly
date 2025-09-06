@@ -122,9 +122,10 @@ export const userService = {
   },
 
   // B4: Hoàn tất hồ sơ
-  completeProfile: async ({ fullName, dateOfBirth, gender, password }) => {
+  completeProfile: async ({ phoneNumber, fullName, dateOfBirth, gender, password }) => {
     try {
       const response = await api.put('/users/complete-profile', {
+        phoneNumber,
         fullName,
         dateOfBirth,
         gender,
