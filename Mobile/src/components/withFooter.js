@@ -7,7 +7,7 @@ const routeMap = {
   mood: 'MOOD',
   plan: 'PLAN',
   messages: 'MESSAGES',
-  me: 'PROFILE',
+  me: 'PersonalInfo',
 };
 
 const withFooter = (ScreenComp, activeKey) => (props) => (

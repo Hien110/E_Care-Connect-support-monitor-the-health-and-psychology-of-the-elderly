@@ -1,20 +1,19 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  StatusBar,
-  SafeAreaView,
   ActivityIndicator,
+  Image,
   RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import userService from '../../services/userService';
-import FooterNav from '../../components/FooterNav';
 
 const PRIMARY = '#0046FF';
 const PRIMARY_LIGHT = '#2F66FF';
@@ -104,8 +103,8 @@ const PersonalInfoScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* mép bo cong trắng để chuyển tiếp êm */}
-        <View style={styles.heroBottom} />
+        {/* Add the ellipse overlapping the background */}
+        <View style={styles.ellipseOverlay} />
 
         {/* avatar đè mép xanh–trắng */}
         <View style={styles.avatarWrap}>
@@ -126,7 +125,7 @@ const PersonalInfoScreen = ({ navigation }) => {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={{ paddingBottom: 16 }}
+        contentContainerStyle={{ paddingTop: 80, paddingBottom: 16 }}
       >
         {/* khoảng đệm thay thế cho stats để bố cục vẫn thoáng */}
         <View style={styles.topSpacer} />
@@ -187,52 +186,42 @@ const PersonalInfoScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
 
-  heroWrapper: { position: 'relative', backgroundColor: BG },
-
   headerBlue: {
-    height: HEADER_H,
-    backgroundColor: PRIMARY,
+    height: 80,
+    backgroundColor: PRIMARY_LIGHT,
     justifyContent: 'flex-start',
     paddingTop: 8,
     overflow: 'hidden',
   },
 
-  bubbleLayer: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 0,
-  },
-  bubble: {
-    position: 'absolute',
-    backgroundColor: PRIMARY_LIGHT,
-    opacity: 0.25,
-    borderRadius: 9999,
-  },
-  bubbleA: { width: 260, height: 260, top: -140, left: -40 },
-  bubbleB: { width: 220, height: 220, top: -100, right: -60, backgroundColor: '#6E94FF', opacity: 0.22 },
-  bubbleC: { width: 280, height: 280, top: -40, left: 120, opacity: 0.18 },
-  bubbleD: { width: 200, height: 200, top: 40, right: 40, opacity: 0.15 },
+  // bubbleLayer: {
+  //   ...StyleSheet.absoluteFillObject,
+  //   zIndex: 0,
+  // },
+  // bubble: {
+  //   position: 'absolute',
+  //   backgroundColor: PRIMARY_LIGHT,
+  //   opacity: 0.25,
+  //   borderRadius: 9999,
+  // },
+  // bubbleA: { width: 260, height: 260, top: -140, left: -40 },
+  // bubbleB: { width: 220, height: 220, top: -100, right: -60, backgroundColor: '#6E94FF', opacity: 0.22 },
+  // bubbleC: { width: 280, height: 280, top: -40, left: 120, opacity: 0.18 },
+  // bubbleD: { width: 200, height: 200, top: 40, right: 40, opacity: 0.15 },
 
   headerRow: {
-    zIndex: 1,
+    zIndex: 10,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     marginTop: 8,
   },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', color: WHITE, fontSize: 22, fontWeight: '700', marginRight: 40 },
-
-  heroBottom: {
-    backgroundColor: WHITE,
-    height: 44,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    marginTop: -18,
-  },
+  headerTitle: { flex: 1, textAlign: 'center', color: WHITE, fontSize: 22, fontWeight: '700', marginRight: 10, zIndex: 10 },
 
   avatarWrap: {
     position: 'absolute',
-    top: HEADER_H - AVATAR / 2 - 8,
+    top: HEADER_H - AVATAR / 2 - 40,
     alignSelf: 'center',
     width: AVATAR,
     height: AVATAR,
@@ -241,15 +230,27 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: WHITE,
     backgroundColor: '#f5f5f5',
+    zIndex: 10,
   },
   avatar: { width: '100%', height: '100%', borderRadius: AVATAR / 2 },
+ellipseOverlay: {
+  position: 'absolute',
+  top: 25,  // Adjust to overlap with the blue background
+  left: 0,
+  width: '100%',  // Full width
+  height: 100,  // Ellipse height
+  borderColor: PRIMARY,  // Border color
+  borderRadius: 50,  // Create a circular border (half of the height/width)
+  zIndex: -10,  // Ensure it's behind other elements
+  backgroundColor: PRIMARY_LIGHT,  // Match the background color to create the ellipse effect
+},
 
-  /* spacer thay cho stats */
+
   topSpacer: {
-    height: 20,           // chỉnh 16–28 tuỳ bạn muốn thoáng cỡ nào
+    height: 20,
   },
 
-  cardList: { backgroundColor: WHITE, paddingHorizontal: 16 },
+  cardList: { paddingHorizontal: 16 },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -263,7 +264,6 @@ const styles = StyleSheet.create({
   menuTitle: { fontSize: 16, color: TEXT, fontWeight: '500' },
   menuSub: { fontSize: 12, color: SUB, marginTop: 2 },
 
-  /* Error */
   errorBox: {
     marginTop: 10,
     backgroundColor: '#FFF1F2',
