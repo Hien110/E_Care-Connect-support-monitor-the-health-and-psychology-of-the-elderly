@@ -1,9 +1,9 @@
-import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, StatusBar, SafeAreaView, Modal } from "react-native"
+import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, StatusBar, SafeAreaView, Modal } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { relationshipService } from "../../services/relationshipService";
-
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 
 const FamilyConnectionListScreen = () => {
     const navigation = useNavigation();
@@ -25,8 +25,8 @@ const FamilyConnectionListScreen = () => {
                     const transformedData = result.data.map((relationship, index) => ({
                         id: relationship._id,
                         name: relationship.requestedBy?.fullName || 'Unknown',
-                        relationship: getRelationshipLabel(relationship.relationship),
-                        phone: relationship.elderly?.phoneNumber || 'N/A',
+                        relationship: relationship.relationship,
+                        phone: relationship.requestedBy?.phoneNumber || 'N/A',
                         avatar: relationship.requestedBy?.avatar || 'https://via.placeholder.com/100',
                         isAccepted: true,
                     }));
@@ -44,20 +44,6 @@ const FamilyConnectionListScreen = () => {
 
         fetchConnectedMembers();
     }, []);
-
-    const getRelationshipLabel = (relationship) => {
-        const relationshipMap = {
-            child: 'Con',
-            spouse: 'Vợ/Chồng',
-            sibling: 'Anh/Chị em',
-            parent: 'Cha/Mẹ',
-            grandchild: 'Cháu',
-            relative: 'Họ hàng',
-            friend: 'Bạn bè',
-            caregiver: 'Người chăm sóc',
-        };
-        return relationshipMap[relationship] || relationship;
-    };
 
     const handleBack = () => {
         // Handle back navigation
@@ -131,7 +117,7 @@ const FamilyConnectionListScreen = () => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Icon name="arrow-back" size={24} color="white" />
+                    <Icon name="arrow-back" size={wp("6%")} color="white" />
                 </TouchableOpacity>
 
                 <View style={styles.headerCenter}>
@@ -160,8 +146,8 @@ const FamilyConnectionListScreen = () => {
                                         const transformedData = result.data.map((relationship, index) => ({
                                             id: relationship._id,
                                             name: relationship.requestedBy?.fullName || 'Unknown',
-                                            relationship: getRelationshipLabel(relationship.relationship),
-                                            phone: relationship.elderly?.phoneNumber || 'N/A',
+                                            relationship: relationship.relationship,
+                                            phone: relationship.requestedBy?.phoneNumber || 'N/A',
                                             avatar: relationship.requestedBy?.avatar || 'https://via.placeholder.com/100',
                                             isAccepted: true,
                                         }));
@@ -212,7 +198,7 @@ const FamilyConnectionListScreen = () => {
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Xác nhận hủy kết nối</Text>
                             <TouchableOpacity onPress={handleCloseCancelModal} style={styles.closeButton}>
-                                <Icon name="close" size={24} color="#6B7280" />
+                                <Icon name="close" size={wp("6%")} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
 
@@ -237,7 +223,7 @@ const FamilyConnectionListScreen = () => {
                                     </Text>
                                 </View>
                                 <View style={styles.phoneModal}>
-                                    <Icon name="phone" size={16} color="#10B981" />
+                                    <Icon name="phone" size={wp("4%")} color="#10B981" />
                                     <Text style={styles.phoneTextModal}>{selectedMember?.phone || "N/A"}</Text>
                                 </View>
                             </View>
@@ -271,16 +257,13 @@ const FamilyConnectionListScreen = () => {
                             <View style={styles.notificationIconContainer}>
                                 <Icon
                                     name={notificationMessage.includes("Lỗi") || notificationMessage.includes("lỗi") ? "error" : "check-circle"}
-                                    size={48}
+                                    size={wp("12%")}
                                     color={notificationMessage.includes("Lỗi") || notificationMessage.includes("lỗi") ? "#EF4444" : "#10B981"}
                                 />
                             </View>
                             <Text style={styles.notificationTitle}>
                                 {notificationMessage.includes("Lỗi") || notificationMessage.includes("lỗi") ? "Lỗi" : "Thành công"}
                             </Text>
-                            <TouchableOpacity onPress={handleCloseNotificationModal} style={styles.closeButton}>
-                                <Icon name="close" size={24} color="#6B7280" />
-                            </TouchableOpacity>
                         </View>
                         <Text style={styles.notificationMessage}>{notificationMessage}</Text>
                         <TouchableOpacity style={styles.okButton} onPress={handleCloseNotificationModal}>
@@ -302,21 +285,16 @@ const styles = StyleSheet.create({
         backgroundColor: "#4F7EFF",
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: wp("4%"),
+        paddingVertical: hp("1.5%"),
         elevation: 4,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: hp("0.2%") },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowRadius: wp("1%"),
     },
     backButton: {
-        padding: 8,
-    },
-    backArrow: {
-        color: "#FFFFFF",
-        fontSize: 24,
-        fontWeight: "bold",
+        padding: wp("2%"),
     },
     headerCenter: {
         flex: 1,
@@ -324,85 +302,72 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         color: "#FFFFFF",
-        fontSize: 18,
+        fontSize: wp("4.5%"),
         fontWeight: "bold",
     },
     headerSubtitle: {
         color: "#FFFFFF",
-        fontSize: 14,
+        fontSize: wp("3.5%"),
         opacity: 0.9,
-    },
-    connectionCount: {
-        backgroundColor: "#6B8EFF",
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    connectionCountText: {
-        color: "#FFFFFF",
-        fontSize: 16,
-        fontWeight: "bold",
     },
     content: {
         flex: 1,
-        padding: 16,
+        padding: wp("4%"),
     },
     sectionHeader: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 20,
+        marginBottom: hp("2%"),
     },
     userIcon: {
-        marginRight: 12,
+        marginRight: wp("3%"),
     },
     userIconText: {
-        fontSize: 24,
+        fontSize: wp("6%"),
     },
     sectionTitle: {
-        fontSize: 18,
+        fontSize: wp("4.5%"),
         fontWeight: "bold",
         color: "#333333",
     },
     membersList: {
-        gap: 12,
+        gap: hp("1.5%"),
     },
     memberCard: {
         backgroundColor: "#FFFFFF",
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
+        borderRadius: wp("3%"),
+        padding: wp("4%"),
+        marginBottom: hp("1.5%"),
         borderWidth: 2,
         borderColor: "#B8E6B8",
         elevation: 2,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: { width: 0, height: hp("0.2%") },
         shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowRadius: wp("0.5%"),
     },
     memberInfo: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 12,
+        marginBottom: hp("1.5%"),
     },
     avatarContainer: {
         position: "relative",
-        marginRight: 12,
+        marginRight: wp("3%"),
     },
     avatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+        width: wp("12%"),
+        height: wp("12%"),
+        borderRadius: wp("6%"),
     },
     checkmarkIcon: {
         position: "absolute",
-        bottom: -2,
-        right: -2,
+        bottom: hp("-0.5%"),
+        right: wp("-0.5%"),
         backgroundColor: "#4CAF50",
-        width: 20,
-        height: 20,
-        borderRadius: 10,
+        width: wp("5%"),
+        height: wp("5%"),
+        borderRadius: wp("2.5%"),
         justifyContent: "center",
         alignItems: "center",
         borderWidth: 2,
@@ -410,20 +375,20 @@ const styles = StyleSheet.create({
     },
     checkmark: {
         color: "#FFFFFF",
-        fontSize: 12,
+        fontSize: wp("3%"),
         fontWeight: "bold",
     },
     memberDetails: {
         flex: 1,
     },
     memberName: {
-        fontSize: 16,
+        fontSize: wp("4%"),
         fontWeight: "bold",
         color: "#333333",
-        marginBottom: 4,
+        marginBottom: hp("1%"),
     },
     memberRelationship: {
-        fontSize: 14,
+        fontSize: wp("3.5%"),
         color: "#666666",
     },
     actionButtons: {
@@ -433,44 +398,44 @@ const styles = StyleSheet.create({
     },
     acceptedBadge: {
         backgroundColor: "#E8F5E8",
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 16,
+        paddingHorizontal: wp("3%"),
+        paddingVertical: hp("1%"),
+        borderRadius: wp("4%"),
     },
     acceptedText: {
         color: "#4CAF50",
-        fontSize: 12,
+        fontSize: wp("3%"),
         fontWeight: "600",
     },
     cancelButton: {
         backgroundColor: "#FF6B6B",
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
+        paddingHorizontal: wp("3%"),
+        paddingVertical: hp("1%"),
+        borderRadius: wp("5%"),
         elevation: 2,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: { width: 0, height: hp("0.2%") },
         shadowOpacity: 0.2,
-        shadowRadius: 2,
+        shadowRadius: wp("0.5%"),
         borderWidth: 1,
         borderColor: "#FF5252",
     },
     cancelButtonText: {
         color: "#FFFFFF",
-        fontSize: 14,
+        fontSize: wp("3.5%"),
         fontWeight: "600",
         textAlign: "center",
     },
     cancelButtonMain: {
         backgroundColor: "#FF6B6B",
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
+        paddingHorizontal: wp("3%"),
+        paddingVertical: hp("1%"),
+        borderRadius: wp("5%"),
         elevation: 2,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: { width: 0, height: hp("0.2%") },
         shadowOpacity: 0.2,
-        shadowRadius: 2,
+        shadowRadius: wp("0.5%"),
         borderWidth: 1,
         borderColor: "#FF5252",
     },
@@ -478,44 +443,44 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        paddingVertical: 50,
+        paddingVertical: hp("6%"),
     },
     loadingText: {
-        fontSize: 16,
+        fontSize: wp("4%"),
         color: "#666666",
     },
     errorContainer: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        paddingVertical: 50,
-        paddingHorizontal: 20,
+        paddingVertical: hp("6%"),
+        paddingHorizontal: wp("5%"),
     },
     errorText: {
-        fontSize: 16,
+        fontSize: wp("4%"),
         color: "#E53E3E",
         textAlign: "center",
-        marginBottom: 20,
+        marginBottom: hp("2%"),
     },
     retryButton: {
         backgroundColor: "#4F7EFF",
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 8,
+        paddingHorizontal: wp("5%"),
+        paddingVertical: hp("2%"),
+        borderRadius: wp("2%"),
     },
     retryButtonText: {
         color: "#FFFFFF",
-        fontSize: 14,
+        fontSize: wp("3.5%"),
         fontWeight: "600",
     },
     emptyContainer: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        paddingVertical: 50,
+        paddingVertical: hp("6%"),
     },
     emptyText: {
-        fontSize: 16,
+        fontSize: wp("4%"),
         color: "#666666",
         textAlign: "center",
     },
@@ -524,71 +489,66 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(0, 0, 0, 0.5)",
         justifyContent: "center",
         alignItems: "center",
-        padding: 20,
+        paddingHorizontal: wp("2%"),
     },
     modalContainer: {
-        width: "100%",
+        width: wp("90%"),
         backgroundColor: "white",
-        borderRadius: 16,
-        padding: 20,
+        borderRadius: wp("4%"),
+        padding: wp("5%"),
         shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
+        shadowOffset: { width: 0, height: hp("0.5%") },
         shadowOpacity: 0.25,
-        shadowRadius: 4,
+        shadowRadius: wp("1%"),
         elevation: 5,
+        flexGrow: 1,
     },
     modalHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 12,
+        marginBottom: hp("1.5%"),
     },
     modalTitle: {
-        fontSize: 18,
+        fontSize: wp("4.5%"),
         fontWeight: "600",
         color: "#1F2937",
     },
     closeButton: {
-        position: "absolute",
-        top: 0,
-        right: 0,
-        padding: 4,
+        padding: wp("1%"),
     },
     modalSubtitle: {
-        fontSize: 14,
+        fontSize: wp("3.5%"),
         color: "#6B7280",
-        marginBottom: 16,
+        marginBottom: hp("2%"),
     },
     userInfoModal: {
-        marginVertical: 16,
+        marginVertical: hp("2%"),
     },
     divider: {
-        height: 1,
+        height: hp("0.2%"),
         backgroundColor: "#E5E7EB",
-        marginVertical: 8,
+        marginVertical: hp("1%"),
     },
     userDetailsModal: {
-        paddingVertical: 8,
+        paddingVertical: hp("1%"),
         alignItems: "center",
     },
     userNameModal: {
-        fontSize: 18,
+        fontSize: wp("4.5%"),
         fontWeight: "600",
         color: "#1F2937",
         textAlign: "center",
-        marginBottom: 4,
+        marginBottom: hp("1%"),
     },
     userMetaModal: {
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: 8,
+        marginBottom: hp("1%"),
     },
     relationshipModal: {
-        fontSize: 14,
+        fontSize: wp("3.5%"),
         color: "#3B82F6",
         fontWeight: "500",
     },
@@ -598,88 +558,85 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     phoneTextModal: {
-        fontSize: 14,
+        fontSize: wp("3.5%"),
         color: "#6B7280",
-        marginLeft: 4,
+        marginLeft: wp("1%"),
     },
     modalActions: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginTop: 16,
-        gap: 12,
+        marginTop: hp("2%"),
+        gap: wp("2%"),
     },
     cancelButton: {
         flex: 1,
         backgroundColor: "#F3F4F6",
-        paddingVertical: 12,
-        borderRadius: 8,
+        paddingVertical: hp("2%"),
+        borderRadius: wp("2%"),
         alignItems: "center",
     },
     cancelButtonText: {
-        fontSize: 16,
+        fontSize: wp("4%"),
         fontWeight: "600",
         color: "#4B5563",
     },
     confirmButton: {
         flex: 1,
         backgroundColor: "#db2b2bff",
-        paddingVertical: 12,
-        borderRadius: 8,
+        paddingVertical: hp("2%"),
+        borderRadius: wp("2%"),
         alignItems: "center",
     },
     confirmButtonText: {
-        fontSize: 16,
+        fontSize: wp("4%"),
         fontWeight: "600",
         color: "white",
     },
     notificationModalContainer: {
-        width: "80%",
+        width: wp("80%"),
         backgroundColor: "white",
-        borderRadius: 16,
-        padding: 20,
+        borderRadius: wp("4%"),
+        padding: wp("5%"),
         shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
+        shadowOffset: { width: 0, height: hp("0.5%") },
         shadowOpacity: 0.25,
-        shadowRadius: 4,
+        shadowRadius: wp("1%"),
         elevation: 5,
         alignItems: "center",
     },
     notificationHeader: {
         alignItems: "center",
         width: "100%",
-        marginBottom: 12,
+        marginBottom: hp("1.5%"),
         position: "relative",
     },
     notificationIconContainer: {
-        marginBottom: 8,
+        marginBottom: hp("2%"),
     },
     notificationTitle: {
-        fontSize: 18,
+        fontSize: wp("4.5%"),
         fontWeight: "600",
         color: "#1F2937",
         textAlign: "center",
     },
     notificationMessage: {
-        fontSize: 16,
+        fontSize: wp("4%"),
         color: "#4B5563",
         textAlign: "center",
-        marginBottom: 20,
+        marginBottom: hp("2%"),
     },
     okButton: {
         backgroundColor: "#3B82F6",
-        paddingVertical: 12,
-        borderRadius: 8,
+        paddingVertical: hp("2%"),
+        borderRadius: wp("2%"),
         width: "100%",
         alignItems: "center",
     },
     okButtonText: {
-        fontSize: 16,
+        fontSize: wp("4%"),
         fontWeight: "600",
         color: "white",
     },
-})
+});
 
 export default FamilyConnectionListScreen

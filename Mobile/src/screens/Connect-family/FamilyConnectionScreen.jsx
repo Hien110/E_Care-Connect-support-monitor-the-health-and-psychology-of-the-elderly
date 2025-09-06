@@ -3,6 +3,7 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { relationshipService } from "../../services/relationshipService";
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 
 const FamilyConnectionScreen = () => {
   const navigation = useNavigation();
@@ -50,17 +51,6 @@ const FamilyConnectionScreen = () => {
       color: "#10B981",
     },
   ];
-
-  const relationshipMap = {
-    child: "con",
-    spouse: "vợ/chồng",
-    sibling: "anh chị em",
-    parent: "cha mẹ",
-    grandchild: "cháu",
-    relative: "họ hàng",
-    friend: "bạn bè",
-    caregiver: "người chăm sóc",
-  };
 
   const handleAccept = (request) => {
     console.log("Accept request:", request._id);
@@ -115,7 +105,7 @@ const FamilyConnectionScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="white" />
+          <Icon name="arrow-back" size={wp("6%")} color="white" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Kết nối gia đình</Text>
@@ -128,7 +118,7 @@ const FamilyConnectionScreen = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
-              <Icon name="person-add" size={20} color="#F59E0B" />
+              <Icon name="person-add" size={wp("5%")} color="#F59E0B" />
               <Text style={styles.sectionTitle}>Yêu cầu mới</Text>
             </View>
             <View style={styles.requestBadge}>
@@ -149,12 +139,12 @@ const FamilyConnectionScreen = () => {
                     <Text style={styles.userName}>{request.requestedBy?.fullName || "Unknown"}</Text>
                     <View style={styles.userMeta}>
                       <View style={styles.relationshipTag}>
-                        <Icon name="verified" size={16} color="#3B82F6" />
-                        <Text style={styles.relationshipText}>{relationshipMap[request.relationship] || request.relationship}</Text>
+                        <Icon name="verified" size={wp("4%")} color="#3B82F6" />
+                        <Text style={styles.relationshipText}>{request.relationship}</Text>
                       </View>
                       <View style={styles.phoneContainer}>
-                        <Icon name="phone" size={16} color="#10B981" />
-                        <Text style={styles.phoneText}>{request.elderly?.phoneNumber || "N/A"}</Text>
+                        <Icon name="phone" size={wp("4%")} color="#10B981" />
+                        <Text style={styles.phoneText}>{request.requestedBy?.phoneNumber || "N/A"}</Text>
                       </View>
                     </View>
                   </View>
@@ -162,11 +152,11 @@ const FamilyConnectionScreen = () => {
 
                 <View style={styles.actionButtons}>
                   <TouchableOpacity style={styles.declineButton} onPress={() => handleDecline(request)}>
-                    <Icon name="close" size={16} color="#6B7280" />
+                    <Icon name="close" size={wp("4%")} color="#6B7280" />
                     <Text style={styles.declineButtonText}>Từ chối</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.acceptButton} onPress={() => handleAccept(request)}>
-                    <Icon name="check" size={16} color="white" />
+                    <Icon name="check" size={wp("4%")} color="white" />
                     <Text style={styles.acceptButtonText}>Chấp nhận</Text>
                   </TouchableOpacity>
                 </View>
@@ -179,7 +169,7 @@ const FamilyConnectionScreen = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
-              <Icon name="security" size={20} color="#3B82F6" />
+              <Icon name="security" size={wp("5%")} color="#3B82F6" />
               <Text style={styles.sectionTitle}>Quyền riêng tư</Text>
             </View>
           </View>
@@ -212,7 +202,7 @@ const FamilyConnectionScreen = () => {
                 {actionType === "accept" ? "Xác nhận chấp nhận" : "Xác nhận từ chối"}
               </Text>
               <TouchableOpacity onPress={handleCloseModal} style={styles.closeButton}>
-                <Icon name="close" size={24} color="#6B7280" />
+                <Icon name="close" size={wp("6%")} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
@@ -235,12 +225,12 @@ const FamilyConnectionScreen = () => {
                 <Text style={styles.userNameModal}>{selectedRequest?.requestedBy?.fullName || "Unknown"}</Text>
                 <View style={styles.userMetaModal}>
                   <Text style={styles.relationshipModal}>
-                    {relationshipMap[selectedRequest?.relationship] || selectedRequest?.relationship}
+                    {selectedRequest?.relationship}
                   </Text>
                 </View>
                 <View style={styles.phoneModal}>
-                  <Icon name="phone" size={16} color="#10B981" />
-                  <Text style={styles.phoneTextModal}>{selectedRequest?.elderly?.phoneNumber || "N/A"}</Text>
+                  <Icon name="phone" size={wp("4%")} color="#10B981" />
+                  <Text style={styles.phoneTextModal}>{selectedRequest?.requestedBy?.phoneNumber || "N/A"}</Text>
                 </View>
               </View>
 
@@ -253,28 +243,28 @@ const FamilyConnectionScreen = () => {
 
                 <View style={styles.permissionItem}>
                   <View style={styles.checkbox}>
-                    <Icon name="check" size={16} color="#3B82F6" />
+                    <Icon name="check" size={wp("4%")} color="#3B82F6" />
                   </View>
                   <Text style={styles.permissionText}>Xem chỉ số sức khỏe hàng ngày</Text>
                 </View>
 
                 <View style={styles.permissionItem}>
                   <View style={styles.checkbox}>
-                    <Icon name="check" size={16} color="#3B82F6" />
+                    <Icon name="check" size={wp("4%")} color="#3B82F6" />
                   </View>
                   <Text style={styles.permissionText}>Nhận thông báo về lịch uống thuốc</Text>
                 </View>
 
                 <View style={styles.permissionItem}>
                   <View style={styles.checkbox}>
-                    <Icon name="check" size={16} color="#3B82F6" />
+                    <Icon name="check" size={wp("4%")} color="#3B82F6" />
                   </View>
                   <Text style={styles.permissionText}>Theo dõi tình trạng cảm xúc</Text>
                 </View>
 
                 <View style={styles.permissionItem}>
                   <View style={styles.checkbox}>
-                    <Icon name="check" size={16} color="#3B82F6" />
+                    <Icon name="check" size={wp("4%")} color="#3B82F6" />
                   </View>
                   <Text style={styles.permissionText}>Nhận cảnh báo khẩn cấp</Text>
                 </View>
@@ -309,16 +299,13 @@ const FamilyConnectionScreen = () => {
               <View style={styles.notificationIconContainer}>
                 <Icon 
                   name={notificationMessage.includes("Lỗi") ? "error" : "check-circle"} 
-                  size={48} 
+                  size={wp("12%")} 
                   color={notificationMessage.includes("Lỗi") ? "#EF4444" : "#10B981"} 
                 />
               </View>
               <Text style={styles.notificationTitle}>
                 {notificationMessage.includes("Lỗi") ? "Lỗi" : "Thành công"}
               </Text>
-              <TouchableOpacity onPress={handleCloseNotificationModal} style={styles.closeButton}>
-                <Icon name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
             </View>
             <Text style={styles.notificationMessage}>{notificationMessage}</Text>
             <TouchableOpacity style={styles.okButton} onPress={handleCloseNotificationModal}>
@@ -340,120 +327,123 @@ const styles = StyleSheet.create({
     backgroundColor: "#3B82F6",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: wp("4%"),
+    paddingVertical: hp("1.5%"),
     elevation: 4,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: hp("0.2%") },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: wp("1%"),
   },
   backButton: {
-    padding: 8,
+    padding: wp("2%"),
   },
   headerContent: {
     flex: 1,
-    marginLeft: 8,
+    marginLeft: wp("2%"),
+    alignItems: "center",
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: wp("4.5%"),
     fontWeight: "600",
     color: "white",
+    textAlign: "center",
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     color: "rgba(255, 255, 255, 0.8)",
-    marginTop: 2,
+    marginTop: hp("0.5%"),
+    textAlign: "center",
   },
   badge: {
     backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderRadius: wp("3%"),
+    paddingHorizontal: wp("2%"),
+    paddingVertical: hp("1%"),
   },
   badgeText: {
     color: "white",
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     fontWeight: "600",
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: wp("4%"),
   },
   section: {
-    marginBottom: 24,
+    marginBottom: hp("3%"),
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: hp("2%"),
   },
   sectionTitleContainer: {
     flexDirection: "row",
     alignItems: "center",
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: wp("4%"),
     fontWeight: "600",
     color: "#1F2937",
-    marginLeft: 8,
+    marginLeft: wp("2%"),
   },
   requestBadge: {
     backgroundColor: "#FEF3C7",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: wp("2%"),
+    paddingVertical: hp("1%"),
+    borderRadius: wp("3%"),
   },
   requestBadgeText: {
-    fontSize: 12,
+    fontSize: wp("3%"),
     color: "#D97706",
     fontWeight: "500",
   },
   requestCard: {
     backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: wp("3%"),
+    padding: wp("4%"),
+    marginBottom: hp("2%"),
     elevation: 2,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: hp("0.2%") },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: wp("0.5%"),
   },
   userInfo: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: hp("2%"),
   },
   avatarContainer: {
     position: "relative",
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: wp("12%"),
+    height: wp("12%"),
+    borderRadius: wp("6%"),
   },
   onlineIndicator: {
     position: "absolute",
     bottom: 0,
     right: 0,
-    width: 14,
-    height: 14,
+    width: wp("3.5%"),
+    height: wp("3.5%"),
     backgroundColor: "#10B981",
-    borderRadius: 7,
+    borderRadius: wp("1.75%"),
     borderWidth: 2,
     borderColor: "white",
   },
   userDetails: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: wp("3%"),
   },
   userName: {
-    fontSize: 16,
+    fontSize: wp("4%"),
     fontWeight: "600",
     color: "#1F2937",
-    marginBottom: 4,
+    marginBottom: hp("1%"),
   },
   userMeta: {
     flexDirection: "row",
@@ -463,29 +453,29 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#EBF4FF",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginRight: 12,
+    paddingHorizontal: wp("2%"),
+    paddingVertical: hp("1%"),
+    borderRadius: wp("2%"),
+    marginRight: wp("2%"),
   },
   relationshipText: {
-    fontSize: 12,
+    fontSize: wp("3%"),
     color: "#3B82F6",
     fontWeight: "500",
-    marginLeft: 4,
+    marginLeft: wp("1%"),
   },
   phoneContainer: {
     flexDirection: "row",
     alignItems: "center",
   },
   phoneText: {
-    fontSize: 12,
+    fontSize: wp("3%"),
     color: "#6B7280",
-    marginLeft: 4,
+    marginLeft: wp("1%"),
   },
   actionButtons: {
     flexDirection: "row",
-    gap: 12,
+    gap: wp("3%"),
   },
   declineButton: {
     flex: 1,
@@ -493,14 +483,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#F3F4F6",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: hp("2%"),
+    borderRadius: wp("2%"),
   },
   declineButtonText: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     color: "#6B7280",
     fontWeight: "500",
-    marginLeft: 4,
+    marginLeft: wp("1%"),
   },
   acceptButton: {
     flex: 1,
@@ -508,58 +498,58 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#3B82F6",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: hp("2%"),
+    borderRadius: wp("2%"),
   },
   acceptButtonText: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     color: "white",
     fontWeight: "500",
-    marginLeft: 4,
+    marginLeft: wp("1%"),
   },
   privacyCard: {
     backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: wp("3%"),
+    padding: wp("4%"),
+    marginBottom: hp("2%"),
     flexDirection: "row",
     alignItems: "flex-start",
     elevation: 1,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: hp("0.2%") },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: wp("0.5%"),
   },
   privacyIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: wp("10%"),
+    height: wp("10%"),
+    borderRadius: wp("5%"),
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginRight: wp("3%"),
   },
   privacyEmoji: {
-    fontSize: 20,
+    fontSize: wp("5%"),
   },
   privacyContent: {
     flex: 1,
   },
   privacyTitle: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     fontWeight: "600",
     color: "#1F2937",
-    marginBottom: 4,
+    marginBottom: hp("1%"),
   },
   privacySubtitle: {
-    fontSize: 12,
+    fontSize: wp("3%"),
     color: "#6B7280",
-    lineHeight: 16,
+    lineHeight: hp("2%"),
   },
   noRequestsText: {
     textAlign: "center",
-    fontSize: 16,
+    fontSize: wp("4%"),
     color: "#6B7280",
-    marginTop: 20,
+    marginTop: hp("2%"),
   },
   // Styles for modal
   modalOverlay: {
@@ -567,78 +557,73 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: wp("2%"),
   },
   modalContainer: {
-    width: "100%",
+    width: wp("90%"),
     backgroundColor: "white",
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: wp("4%"),
+    padding: wp("5%"),
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: hp("0.5%") },
     shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowRadius: wp("1%"),
     elevation: 5,
+    flexGrow: 1,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: hp("1.5%"),
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: wp("4.5%"),
     fontWeight: "600",
     color: "#1F2937",
   },
   closeButton: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    padding: 4,
+    padding: wp("1%"),
   },
   modalSubtitle: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     color: "#6B7280",
-    marginBottom: 16,
+    marginBottom: hp("2%"),
   },
   userInfoModal: {
-    marginVertical: 16,
+    marginVertical: hp("2%"),
   },
   divider: {
-    height: 1,
+    height: hp("0.2%"),
     backgroundColor: "#E5E7EB",
-    marginVertical: 8,
+    marginVertical: hp("1%"),
   },
   userDetailsModal: {
-    paddingVertical: 8,
+    paddingVertical: hp("1%"),
     alignItems: "center",
   },
   userNameModal: {
-    fontSize: 18,
+    fontSize: wp("4.5%"),
     fontWeight: "600",
     color: "#1F2937",
     textAlign: "center",
-    marginBottom: 4,
+    marginBottom: hp("1%"),
   },
   userMetaModal: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: hp("1%"),
   },
   relationshipModal: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     color: "#3B82F6",
     fontWeight: "500",
   },
   genderModal: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     color: "#6B7280",
-    marginLeft: 4,
+    marginLeft: wp("1%"),
   },
   phoneModal: {
     flexDirection: "row",
@@ -646,114 +631,111 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   phoneTextModal: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     color: "#6B7280",
-    marginLeft: 4,
+    marginLeft: wp("1%"),
   },
   permissionsContainer: {
-    marginVertical: 16,
+    marginVertical: hp("2%"),
   },
   permissionsTitle: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     fontWeight: "600",
     color: "#1F2937",
-    marginBottom: 12,
+    marginBottom: hp("1.5%"),
   },
   permissionItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: hp("1.5%"),
   },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
+    width: wp("5%"),
+    height: wp("5%"),
+    borderRadius: wp("1%"),
     backgroundColor: "#EFF6FF",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: wp("3%"),
   },
   permissionText: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     color: "#4B5563",
     flex: 1,
   },
   modalActions: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 16,
-    gap: 12,
+    marginTop: hp("2%"),
+    gap: wp("2%"),
   },
   cancelButton: {
     flex: 1,
     backgroundColor: "#F3F4F6",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: hp("2%"),
+    borderRadius: wp("2%"),
     alignItems: "center",
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: wp("4%"),
     fontWeight: "600",
     color: "#4B5563",
   },
   confirmButton: {
     flex: 1,
     backgroundColor: "#3B82F6",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: hp("2%"),
+    borderRadius: wp("2%"),
     alignItems: "center",
   },
   confirmButtonText: {
-    fontSize: 16,
+    fontSize: wp("4%"),
     fontWeight: "600",
     color: "white",
   },
   // Styles for notification modal
   notificationModalContainer: {
-    width: "80%",
+    width: wp("80%"),
     backgroundColor: "white",
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: wp("4%"),
+    padding: wp("5%"),
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: hp("0.5%") },
     shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowRadius: wp("1%"),
     elevation: 5,
     alignItems: "center",
   },
   notificationHeader: {
     alignItems: "center",
     width: "100%",
-    marginBottom: 12,
+    marginBottom: hp("1.5%"),
     position: "relative",
   },
   notificationIconContainer: {
-    marginBottom: 8,
+    marginBottom: hp("2%"),
   },
   notificationTitle: {
-    fontSize: 18,
+    fontSize: wp("4.5%"),
     fontWeight: "600",
     color: "#1F2937",
     textAlign: "center",
   },
   notificationMessage: {
-    fontSize: 16,
+    fontSize: wp("4%"),
     color: "#4B5563",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: hp("2%"),
   },
   okButton: {
     backgroundColor: "#3B82F6",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: hp("2%"),
+    borderRadius: wp("2%"),
     width: "100%",
     alignItems: "center",
   },
   okButtonText: {
-    fontSize: 16,
+    fontSize: wp("4%"),
     fontWeight: "600",
     color: "white",
   },

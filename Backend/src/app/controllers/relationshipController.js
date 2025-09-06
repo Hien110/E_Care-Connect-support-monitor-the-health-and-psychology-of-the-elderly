@@ -4,7 +4,17 @@ const User = require("../models/User.js");
 const RelationshipController = {
   getAllRelationships: async (req, res) => {
     try {
-      const relationships = await Relationship.findAll();
+      const userId = req.user.userId; // Lấy từ token JWT
+      
+      // Tìm tất cả relationships mà user là family hoặc elderly
+      const relationships = await Relationship.find({
+        $or: [
+          { family: userId },
+          { elderly: userId }
+        ]
+      }).populate('elderly', 'fullName phoneNumber avatar')
+        .populate('family', 'fullName phoneNumber avatar');
+      
       return res.status(200).json({
         success: true,
         data: relationships
@@ -32,15 +42,6 @@ const RelationshipController = {
         });
       }
 
-      // Kiểm tra relationship có hợp lệ không
-      const validRelationships = ['child', 'spouse', 'sibling', 'parent', 'grandchild', 'relative', 'friend', 'caregiver'];
-      if (!validRelationships.includes(relationship)) {
-        return res.status(400).json({
-          success: false,
-          message: "Mối quan hệ không hợp lệ"
-        });
-      }
-
       // Kiểm tra người già có tồn tại không
       const elderly = await User.findById(elderlyId);
       if (!elderly || elderly.role !== 'elderly') {
@@ -55,7 +56,7 @@ const RelationshipController = {
       if (!family || family.role !== 'family') {
         return res.status(404).json({
           success: false,
-          message: "Không tìm thấy thông tin người thân"
+          message: "Không tìm thấy thông tin người thân" + familyId
         });
       }
 
@@ -113,7 +114,7 @@ const RelationshipController = {
       const relationships = await Relationship.find({
         elderly: userId,
         status: 'pending'
-      }).populate('elderly', 'fullName phoneNumber').populate('requestedBy', 'fullName avatar');
+      }).populate('elderly', 'fullName').populate('requestedBy', 'fullName avatar phoneNumber');
       return res.status(200).json({
         success: true,
         data: relationships
@@ -214,7 +215,7 @@ const RelationshipController = {
       const relationships = await Relationship.find({
         elderly: userId,
         status: 'accepted'
-      }).populate('elderly', 'fullName phoneNumber').populate('requestedBy', 'fullName avatar');
+      }).populate('elderly', 'fullName').populate('requestedBy', 'fullName avatar phoneNumber');
       return res.status(200).json({
         success: true,
         data: relationships

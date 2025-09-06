@@ -1,38 +1,39 @@
-import { useState, useEffect, useCallback, memo } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, StatusBar, Modal, Image, Alert } from "react-native";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  Modal,
+  Image,
+  Alert,
+  Dimensions,
+  AppState,
+} from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import { userService } from '../../services/userService';
-import { relationshipService } from '../../services/relationshipService';
+import { userService } from "../../services/userService";
+import { relationshipService } from "../../services/relationshipService";
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from "react-native-responsive-screen";
 
-const relationships = ['Con cái', 'Vợ/Chồng', 'Anh/Chị/Em', 'Bố/Mẹ', 'Cháu', 'Người thân', 'Bạn bè', 'Người chăm sóc'];
+// Relationship suggestions
+const relationshipSuggestions = ["Con", "Cháu", "Người chăm sóc", "Em"];
 
-// Memoized Relationship Option Component
-const RelationshipOption = memo(({ relationship, isSelected, onPress }) => (
-  <TouchableOpacity
-    style={styles.relationshipOption}
-    onPress={() => onPress(relationship)}
-    activeOpacity={0.7}
-  >
-    <View style={styles.radioContainer}>
-      <View
-        style={[
-          styles.radioOuter,
-          isSelected && styles.radioOuterSelected,
-        ]}
-      >
-        <View
-          style={[
-            styles.radioInner,
-            { opacity: isSelected ? 1 : 0 }
-          ]}
-        />
-      </View>
-    </View>
-    <Text style={styles.relationshipText}>{relationship}</Text>
-  </TouchableOpacity>
-));
-
-const ConfirmConnectionModal = ({ selectedUser, showConfirmModal, setShowConfirmModal, selectedRelationship, handleRelationshipChange, handleConfirmConnection, handleCancelConnection }) => (
+const ConfirmConnectionModal = ({
+  selectedUser,
+  showConfirmModal,
+  setShowConfirmModal,
+  selectedRelationship,
+  handleRelationshipChange,
+  handleConfirmConnection,
+  handleCancelConnection,
+}) => (
   <Modal
     visible={showConfirmModal}
     transparent={true}
@@ -44,7 +45,7 @@ const ConfirmConnectionModal = ({ selectedUser, showConfirmModal, setShowConfirm
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
           <View style={styles.largeAvatar}>
-            {selectedUser?.avatar && selectedUser.avatar.startsWith('http') ? (
+            {selectedUser?.avatar && selectedUser.avatar.startsWith("http") ? (
               <Image
                 source={{ uri: selectedUser.avatar }}
                 style={styles.largeAvatarImage}
@@ -68,30 +69,36 @@ const ConfirmConnectionModal = ({ selectedUser, showConfirmModal, setShowConfirm
 
         {/* User Info */}
         <View style={styles.userInfoSection}>
-          <Text style={styles.userNameModal}>{selectedUser?.name || "Nguyễn Thị Mai"}</Text>
+          <Text style={styles.userNameModal}>{selectedUser?.name || "Trần Hoàng Anh"}</Text>
           <Text style={styles.userDetailsModal}>
-            {selectedUser?.age || 68} tuổi • {selectedUser?.location || "Quận 1, TP.HCM"}
+            {selectedUser?.age || 24} tuổi • {selectedUser?.location || "Chưa cập nhật"}
           </Text>
         </View>
 
         {/* Relationship Selection */}
         <View style={styles.relationshipSection}>
           <Text style={styles.relationshipTitle}>Mối quan hệ với bạn:</Text>
-          <ScrollView
-            style={styles.relationshipOptions}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {relationships.map((relationship) => (
-              <RelationshipOption
-                key={relationship}
-                relationship={relationship}
-                isSelected={selectedRelationship === relationship}
-                onPress={handleRelationshipChange}
-              />
-            ))}
-          </ScrollView>
+          <TextInput
+            style={styles.relationshipInput}
+            placeholder="Nhập mối quan hệ (vd: con, cháu, người chăm sóc...)"
+            placeholderTextColor="#999"
+            value={selectedRelationship}
+            onChangeText={handleRelationshipChange}
+          />
+          <View style={styles.suggestionsContainer}>
+            <Text style={styles.suggestionsTitle}>Gợi ý:</Text>
+            <View style={styles.suggestionsRow}>
+              {relationshipSuggestions.map((suggestion) => (
+                <TouchableOpacity
+                  key={suggestion}
+                  style={styles.suggestionChip}
+                  onPress={() => handleRelationshipChange(suggestion)}
+                >
+                  <Text style={styles.suggestionText}>{suggestion}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </View>
 
         {/* Action Buttons */}
@@ -114,7 +121,12 @@ const ConfirmConnectionModal = ({ selectedUser, showConfirmModal, setShowConfirm
   </Modal>
 );
 
-const ConnectionSuccessModal = ({ showSuccessModal, selectedUser, selectedRelationship, handleCloseSuccess }) => (
+const ConnectionSuccessModal = ({
+  showSuccessModal,
+  selectedUser,
+  selectedRelationship,
+  handleCloseSuccess,
+}) => (
   <Modal
     visible={showSuccessModal}
     transparent={true}
@@ -125,7 +137,7 @@ const ConnectionSuccessModal = ({ showSuccessModal, selectedUser, selectedRelati
       <View style={styles.successModalContent}>
         {/* Success Icon */}
         <View style={styles.successIcon}>
-          <Icon name="checkmark" size={40} color="white" />
+          <Icon name="checkmark" size={hp("5%")} color="white" />
         </View>
 
         {/* Title */}
@@ -136,7 +148,7 @@ const ConnectionSuccessModal = ({ showSuccessModal, selectedUser, selectedRelati
 
         {/* User Info */}
         <View style={styles.successUserInfo}>
-          <Text style={styles.successUserName}>{selectedUser?.name || "Nguyễn Thị Mai"}</Text>
+          <Text style={styles.successUserName}>{selectedUser?.name || "Trần Hoàng Anh"}</Text>
           <Text style={styles.successUserRelationship}>({selectedRelationship})</Text>
         </View>
 
@@ -144,7 +156,7 @@ const ConnectionSuccessModal = ({ showSuccessModal, selectedUser, selectedRelati
         <View style={styles.pendingNotice}>
           <View style={styles.pendingNoticeHeader}>
             <View style={styles.noticeIcon}>
-              <Icon name="information-circle" size={16} color="white" />
+              <Icon name="information-circle" size={hp("2%")} color="white" />
             </View>
             <Text style={styles.noticeTitle}>Chờ duyệt yêu cầu</Text>
           </View>
@@ -154,10 +166,7 @@ const ConnectionSuccessModal = ({ showSuccessModal, selectedUser, selectedRelati
         </View>
 
         {/* Close Button */}
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={handleCloseSuccess}
-        >
+        <TouchableOpacity style={styles.closeButton} onPress={handleCloseSuccess}>
           <Text style={styles.closeButtonText}>Đóng</Text>
         </TouchableOpacity>
       </View>
@@ -170,60 +179,150 @@ const FindPeopleScreen = ({ navigation }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [selectedRelationship, setSelectedRelationship] = useState("Con cái");
+  const [selectedRelationship, setSelectedRelationship] = useState("");
   const [users, setUsers] = useState([]);
   const [originalUsers, setOriginalUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [relationships, setRelationships] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const intervalRef = useRef(null);
+  const appStateRef = useRef(AppState.currentState);
 
-  const relationships = ['Con cái', 'Vợ/Chồng', 'Anh/Chị/Em', 'Bố/Mẹ', 'Cháu', 'Người thân', 'Bạn bè', 'Người chăm sóc'];
+  // Hàm lấy dữ liệu relationships
+  const fetchRelationships = useCallback(async () => {
+    try {
+      const relResult = await relationshipService.getAllRelationships();
+      if (relResult.success) {
+        console.log('Fetched relationships:', relResult.data);
+        setRelationships(relResult.data);
+        return relResult.data;
+      }
+      return [];
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách relationships:", error);
+      return [];
+    }
+  }, []);
 
-  const relationshipMapping = {
-    'Con cái': 'child',
-    'Vợ/Chồng': 'spouse',
-    'Anh/Chị/Em': 'sibling',
-    'Bố/Mẹ': 'parent',
-    'Cháu': 'grandchild',
-    'Người thân': 'relative',
-    'Bạn bè': 'friend',
-    'Người chăm sóc': 'caregiver'
-  };
+  // Hàm lấy dữ liệu người già
+  const fetchElderly = useCallback(async () => {
+    try {
+      const elderlyResult = await userService.getAllElderly();
+      if (elderlyResult.success) {
+        const transformedUsers = elderlyResult.data.map((user) => ({
+          id: user._id,
+          name: user.fullName,
+          phoneNumber: user.phoneNumber,
+          age: user.dateOfBirth
+            ? new Date().getFullYear() - new Date(user.dateOfBirth).getFullYear()
+            : 65,
+          location: user.address || "Chưa cập nhật",
+          avatar: user.avatar,
+        }));
+        setOriginalUsers(transformedUsers);
+        return transformedUsers;
+      }
+      return [];
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách người già:", error);
+      return [];
+    }
+  }, []);
 
-  // Gọi API lấy danh sách người già khi component mount
+  // Hàm refresh dữ liệu
+  const refreshData = useCallback(async (showLoader = false) => {
+    if (showLoader) {
+      setRefreshing(true);
+    }
+    
+    try {
+      await Promise.all([
+        fetchRelationships(),
+        fetchElderly()
+      ]);
+    } catch (error) {
+      console.error("Lỗi khi refresh dữ liệu:", error);
+    } finally {
+      if (showLoader) {
+        setRefreshing(false);
+      }
+    }
+  }, [fetchRelationships, fetchElderly]);
+
+  // Gọi API lấy dữ liệu ban đầu
   useEffect(() => {
-    const fetchElderlyUsers = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true);
-        const result = await userService.getAllElderly();
-        if (result.success) {
-          const transformedUsers = result.data.map((user, index) => ({
-            id: user._id,
-            name: user.fullName,
-            age: user.dateOfBirth ? new Date().getFullYear() - new Date(user.dateOfBirth).getFullYear() : 65,
-            location: user.address || "Chưa cập nhật",
-            avatar: user.avatar,
-          }));
-          setUsers(transformedUsers);
-          setOriginalUsers(transformedUsers);
-        } else {
-          console.error('Lỗi khi lấy danh sách người già:', result.message);
+
+        // Lấy thông tin user hiện tại
+        const userResult = await userService.getUserInfo();
+        if (userResult.success) {
+          console.log('Current user info:', userResult.data);
+          setCurrentUser(userResult.data);
         }
+
+        // Lấy dữ liệu ban đầu
+        await refreshData();
+
       } catch (error) {
-        console.error('Lỗi khi gọi API:', error);
+        console.error("Lỗi khi gọi API:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchElderlyUsers();
-  }, []);
+    fetchInitialData();
+  }, [refreshData]);
 
-  // Tìm kiếm realtime
+  // Setup interval để refresh relationships theo thời gian thực
   useEffect(() => {
-    if (searchText.trim() === '') {
+    const startInterval = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      
+      // Refresh relationships mỗi 5 giây
+      intervalRef.current = setInterval(() => {
+        if (appStateRef.current === 'active') {
+          fetchRelationships();
+        }
+      }, 5000);
+    };
+
+    // Bắt đầu interval khi component mount
+    startInterval();
+
+    // Cleanup interval khi component unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [fetchRelationships]);
+
+  // Lắng nghe app state thay đổi
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState) => {
+      if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
+        // App trở lại foreground, refresh dữ liệu
+        refreshData();
+      }
+      appStateRef.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, [refreshData]);
+
+  // Tìm kiếm theo số điện thoại - chỉ hiển thị khi nhập đầy đủ
+  useEffect(() => {
+    if (searchText.trim() === "") {
       setUsers([]);
     } else {
-      const filteredUsers = originalUsers.filter(user =>
-        user.name.toLowerCase().includes(searchText.toLowerCase())
+      const filteredUsers = originalUsers.filter((user) =>
+        user.phoneNumber === searchText.trim()
       );
       setUsers(filteredUsers);
     }
@@ -239,29 +338,30 @@ const FindPeopleScreen = ({ navigation }) => {
   }, []);
 
   const handleConfirmConnection = useCallback(async () => {
-    if (!selectedUser || !selectedRelationship) {
-      Alert.alert('Lỗi', 'Vui lòng chọn mối quan hệ');
+    if (!selectedUser || !selectedRelationship.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập mối quan hệ");
       return;
     }
 
     try {
-      const englishRelationship = relationshipMapping[selectedRelationship];
       const result = await relationshipService.createRelationship({
         elderlyId: selectedUser.id,
-        relationship: englishRelationship
+        relationship: selectedRelationship.trim(),
       });
 
       if (result.success) {
         setShowConfirmModal(false);
         setShowSuccessModal(true);
+        // Refresh relationships ngay lập tức sau khi tạo thành công
+        await fetchRelationships();
       } else {
-        Alert.alert('Lỗi', result.message);
+        Alert.alert("Lỗi", result.message);
       }
     } catch (error) {
-      Alert.alert('Lỗi', 'Có lỗi xảy ra khi gửi yêu cầu kết nối');
-      console.error('Create relationship error:', error);
+      Alert.alert("Lỗi", "Có lỗi xảy ra khi gửi yêu cầu kết nối");
+      console.error("Create relationship error:", error);
     }
-  }, [selectedUser, selectedRelationship]);
+  }, [selectedUser, selectedRelationship, fetchRelationships]);
 
   const handleCancelConnection = useCallback(() => {
     setShowConfirmModal(false);
@@ -269,43 +369,164 @@ const FindPeopleScreen = ({ navigation }) => {
 
   const handleCloseSuccess = useCallback(() => {
     setShowSuccessModal(false);
+    setSelectedRelationship(""); // Reset relationship input
+    setSelectedUser(null); // Reset selected user
   }, []);
 
-  const renderUserItem = (user) => (
-    <View key={user.id} style={styles.userItem}>
-      <View style={styles.userInfo}>
-        <View style={styles.avatar}>
-          {user.avatar && user.avatar.startsWith('http') ? (
-            <Image
-              source={{ uri: user.avatar }}
-              style={styles.avatarImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={[styles.avatarPlaceholder, { backgroundColor: "#FFB6C1" }]}>
-              <Text style={styles.avatarText}>
-                {user.avatar || user.name.charAt(0).toUpperCase()}
-              </Text>
+  // Hàm lấy trạng thái relationship giữa current user và elderly
+  const getRelationshipStatus = useCallback((elderlyId) => {
+    if (!currentUser || !relationships.length) return null;
+    
+    // Debug logging
+    console.log('Current User ID:', currentUser._id);
+    console.log('Elderly ID to find:', elderlyId);
+    console.log('Total relationships:', relationships.length);
+    
+    // Tìm relationship giữa current user và elderly
+    const relationship = relationships.find(r => {
+      // Xử lý trường hợp elderly có thể là object hoặc string ID
+      let elderlyIdFromRel = r.elderly;
+      if (typeof r.elderly === 'object' && r.elderly._id) {
+        elderlyIdFromRel = r.elderly._id;
+      }
+      
+      // Xử lý trường hợp family có thể là object hoặc string ID  
+      let familyIdFromRel = r.family;
+      if (typeof r.family === 'object' && r.family._id) {
+        familyIdFromRel = r.family._id;
+      }
+      
+      const elderlyMatch = elderlyIdFromRel === elderlyId;
+      const familyMatch = familyIdFromRel === currentUser._id;
+      
+      console.log('Checking relationship:', {
+        relationshipId: r._id,
+        elderlyFromRel: elderlyIdFromRel,
+        familyFromRel: familyIdFromRel,
+        elderlyToFind: elderlyId,
+        currentUserId: currentUser._id,
+        elderlyMatch,
+        familyMatch,
+        status: r.status
+      });
+      
+      return elderlyMatch && familyMatch;
+    });
+    
+    console.log('Found relationship:', relationship);
+    return relationship ? relationship.status : null;
+  }, [currentUser, relationships]);
+
+  // Hàm lấy thông tin chi tiết relationship
+  const getRelationshipInfo = useCallback((elderlyId) => {
+    if (!currentUser || !relationships.length) return null;
+    
+    const relationship = relationships.find(r => {
+      // Xử lý trường hợp elderly có thể là object hoặc string ID
+      let elderlyIdFromRel = r.elderly;
+      if (typeof r.elderly === 'object' && r.elderly._id) {
+        elderlyIdFromRel = r.elderly._id;
+      }
+      
+      // Xử lý trường hợp family có thể là object hoặc string ID  
+      let familyIdFromRel = r.family;
+      if (typeof r.family === 'object' && r.family._id) {
+        familyIdFromRel = r.family._id;
+      }
+      
+      const elderlyMatch = elderlyIdFromRel === elderlyId;
+      const familyMatch = familyIdFromRel === currentUser._id;
+      
+      return elderlyMatch && familyMatch;
+    });
+    
+    return relationship || null;
+  }, [currentUser, relationships]);
+
+  const renderUserItem = (user) => {
+    const status = getRelationshipStatus(user.id);
+    const relationshipInfo = getRelationshipInfo(user.id);
+
+    // Hàm render button/status dựa trên trạng thái
+    const renderConnectionStatus = () => {
+      switch (status) {
+        case 'pending':
+          return (
+            <View style={styles.statusContainer}>
+              <View style={styles.pendingStatus}>
+                <Icon name="time-outline" size={wp("4%")} color="#FF9800" />
+                <Text style={styles.pendingStatusText}>Chờ chấp nhận</Text>
+              </View>
+              {relationshipInfo && (
+                <Text style={styles.relationshipTypeText}>
+                  ({relationshipInfo.relationship})
+                </Text>
+              )}
             </View>
-          )}
+          );
+        case 'accepted':
+          return (
+            <View style={styles.statusContainer}>
+              <View style={styles.acceptedStatus}>
+                <Icon name="checkmark-circle" size={wp("4%")} color="#4CAF50" />
+                <Text style={styles.acceptedStatusText}>Đã kết nối</Text>
+              </View>
+              {relationshipInfo && (
+                <Text style={styles.relationshipTypeText}>
+                  ({relationshipInfo.relationship})
+                </Text>
+              )}
+            </View>
+          );
+        case 'rejected':
+          return (
+            <View style={styles.statusContainer}>
+              <View style={styles.rejectedStatus}>
+                <Icon name="close-circle" size={wp("4%")} color="#F44336" />
+                <Text style={styles.rejectedStatusText}>Đã từ chối</Text>
+              </View>
+            </View>
+          );
+        default:
+          return (
+            <TouchableOpacity style={styles.connectButton} onPress={() => handleConnect(user)}>
+              <Text style={styles.connectButtonText}>Kết nối</Text>
+            </TouchableOpacity>
+          );
+      }
+    };
+
+    return (
+      <View key={user.id} style={styles.userItem}>
+        <View style={styles.userInfo}>
+          <View style={styles.avatar}>
+            {user.avatar && user.avatar.startsWith("http") ? (
+              <Image
+                source={{ uri: user.avatar }}
+                style={styles.avatarImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.avatarPlaceholder, { backgroundColor: "#FFB6C1" }]}>
+                <Text style={styles.avatarText}>
+                  {user.avatar || user.name.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.userDetails}>
+            <Text style={styles.userName}>{user.name}</Text>
+            <Text style={styles.userLocation}>
+              {user.age} tuổi • {user.location}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.userDetails}>
-          <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userLocation}>
-            {user.age} tuổi • {user.location}
-          </Text>
-        </View>
+        {renderConnectionStatus()}
       </View>
-
-      <TouchableOpacity
-        style={styles.connectButton}
-        onPress={() => handleConnect(user)}
-      >
-        <Text style={styles.connectButtonText}>Kết nối</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -314,7 +535,7 @@ const FindPeopleScreen = ({ navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="white" />
+          <Icon name="arrow-back" size={wp("6%")} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Tìm kiếm người thân</Text>
       </View>
@@ -322,20 +543,18 @@ const FindPeopleScreen = ({ navigation }) => {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
+          <Icon name="search" size={wp("5%")} color="#999" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm kiếm theo tên..."
+            placeholder="Nhập số điện thoại..."
             placeholderTextColor="#999"
             value={searchText}
             onChangeText={setSearchText}
+            keyboardType="phone-pad"
           />
           {searchText.length > 0 && (
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={() => setSearchText('')}
-            >
-              <Icon name="close-circle" size={20} color="#999" />
+            <TouchableOpacity style={styles.clearButton} onPress={() => setSearchText("")}>
+              <Icon name="close-circle" size={wp("5%")} color="#999" />
             </TouchableOpacity>
           )}
         </View>
@@ -344,10 +563,22 @@ const FindPeopleScreen = ({ navigation }) => {
       {/* Results Header */}
       <View style={styles.resultsHeader}>
         <Text style={styles.resultsTitle}>
-          {searchText.trim() ? `Kết quả tìm kiếm "${searchText}"` : 'Tìm kiếm người thân'}
+          {searchText.trim() ? `Kết quả tìm kiếm "${searchText}"` : "Tìm kiếm người thân theo số điện thoại"}
         </Text>
+        <TouchableOpacity 
+          style={styles.refreshButton}
+          onPress={() => refreshData(true)}
+          disabled={refreshing}
+        >
+          <Icon 
+            name={refreshing ? "sync" : "refresh"} 
+            size={wp("4%")} 
+            color="#2196F3" 
+            style={refreshing ? styles.spinning : null}
+          />
+        </TouchableOpacity>
         <Text style={styles.resultsCount}>
-          {loading ? "Đang tải..." : searchText.trim() ? `${users.length} người` : ''}
+          {loading ? "Đang tải..." : searchText.trim() ? `${users.length} người` : ""}
         </Text>
       </View>
 
@@ -359,17 +590,17 @@ const FindPeopleScreen = ({ navigation }) => {
           </View>
         ) : !searchText.trim() ? (
           <View style={styles.emptyContainer}>
-            <Icon name="search" size={48} color="#ccc" style={styles.searchIconLarge} />
-            <Text style={styles.emptyText}>Nhập tên để tìm kiếm người thân</Text>
-            <Text style={styles.emptySubtext}>Bắt đầu nhập tên người bạn muốn tìm</Text>
+            <Icon name="search" size={wp("12%")} color="#ccc" style={styles.searchIconLarge} />
+            <Text style={styles.emptyText}>Nhập số điện thoại để tìm kiếm người thân</Text>
+            <Text style={styles.emptySubtext}>Nhập đầy đủ số điện thoại để hiển thị kết quả</Text>
           </View>
         ) : users.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Icon name="search" size={48} color="#ccc" style={styles.searchIconLarge} />
+            <Icon name="search" size={wp("12%")} color="#ccc" style={styles.searchIconLarge} />
             <Text style={styles.emptyText}>
-              Không tìm thấy người nào với tên "{searchText}"
+              Không tìm thấy người nào với số điện thoại "{searchText}"
             </Text>
-            <Text style={styles.emptySubtext}>Thử tìm với tên khác</Text>
+            <Text style={styles.emptySubtext}>Kiểm tra lại số điện thoại</Text>
           </View>
         ) : (
           users.map(renderUserItem)
@@ -407,67 +638,75 @@ const styles = StyleSheet.create({
     backgroundColor: "#2196F3",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: wp("4%"),
+    paddingVertical: hp("1.5%"),
     elevation: 4,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: hp("0.2%") },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: wp("1%"),
   },
   backButton: {
-    marginRight: 16,
+    marginRight: wp("4%"),
   },
   headerTitle: {
     color: "white",
-    fontSize: 18,
+    fontSize: wp("4.5%"),
     fontWeight: "600",
   },
   searchContainer: {
     backgroundColor: "#2196F3",
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: wp("4%"),
+    paddingBottom: hp("2%"),
   },
   searchBar: {
     backgroundColor: "white",
-    borderRadius: 25,
+    borderRadius: wp("6%"),
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: wp("4%"),
+    paddingVertical: hp("1.5%"),
     elevation: 2,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: hp("0.1%") },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: wp("0.5%"),
   },
   searchIcon: {
-    marginRight: 12,
+    marginRight: wp("3%"),
   },
   clearButton: {
-    marginLeft: 8,
-    padding: 4,
+    marginLeft: wp("2%"),
+    padding: wp("1%"),
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: wp("4%"),
     color: "#333",
   },
   resultsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: wp("4%"),
+    paddingVertical: hp("2%"),
     backgroundColor: "white",
   },
   resultsTitle: {
-    fontSize: 16,
+    flex: 1,
+    fontSize: wp("4%"),
     fontWeight: "600",
     color: "#333",
   },
+  refreshButton: {
+    padding: wp("2%"),
+    marginHorizontal: wp("2%"),
+  },
+  spinning: {
+    transform: [{ rotate: '360deg' }],
+  },
   resultsCount: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     color: "#666",
   },
   userList: {
@@ -477,8 +716,8 @@ const styles = StyleSheet.create({
   userItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: wp("4%"),
+    paddingVertical: hp("2%"),
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
@@ -488,29 +727,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: wp("12%"),
+    height: wp("12%"),
+    borderRadius: wp("6%"),
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: wp("3%"),
     position: "relative",
     overflow: "hidden",
   },
   avatarImage: {
     width: "100%",
     height: "100%",
-    borderRadius: 25,
+    borderRadius: wp("6%"),
   },
   avatarPlaceholder: {
     width: "100%",
     height: "100%",
-    borderRadius: 25,
+    borderRadius: wp("6%"),
     justifyContent: "center",
     alignItems: "center",
   },
   avatarText: {
-    fontSize: 20,
+    fontSize: wp("5%"),
     fontWeight: "600",
     color: "#333",
   },
@@ -518,59 +757,120 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userName: {
-    fontSize: 16,
+    fontSize: wp("4%"),
     fontWeight: "600",
     color: "#333",
-    marginBottom: 4,
+    marginBottom: hp("0.5%"),
   },
   userLocation: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     color: "#666",
-    marginBottom: 6,
+    marginBottom: hp("0.8%"),
   },
   connectButton: {
     backgroundColor: "#2196F3",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: wp("4%"),
+    paddingVertical: hp("1%"),
+    borderRadius: wp("5%"),
   },
   connectButtonText: {
     color: "white",
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     fontWeight: "600",
+  },
+  statusContainer: {
+    alignItems: "flex-end",
+    minWidth: wp("25%"),
+  },
+  pendingStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF3E0",
+    paddingHorizontal: wp("2.5%"),
+    paddingVertical: hp("0.8%"),
+    borderRadius: wp("3%"),
+    borderWidth: 1,
+    borderColor: "#FF9800",
+  },
+  pendingStatusText: {
+    fontSize: wp("3%"),
+    fontWeight: "600",
+    color: "#FF9800",
+    marginLeft: wp("1%"),
+  },
+  acceptedStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E8F5E8",
+    paddingHorizontal: wp("2.5%"),
+    paddingVertical: hp("0.8%"),
+    borderRadius: wp("3%"),
+    borderWidth: 1,
+    borderColor: "#4CAF50",
+  },
+  acceptedStatusText: {
+    fontSize: wp("3%"),
+    fontWeight: "600",
+    color: "#4CAF50",
+    marginLeft: wp("1%"),
+  },
+  rejectedStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFEBEE",
+    paddingHorizontal: wp("2.5%"),
+    paddingVertical: hp("0.8%"),
+    borderRadius: wp("3%"),
+    borderWidth: 1,
+    borderColor: "#F44336",
+  },
+  rejectedStatusText: {
+    fontSize: wp("3%"),
+    fontWeight: "600",
+    color: "#F44336",
+    marginLeft: wp("1%"),
+  },
+  relationshipTypeText: {
+    fontSize: wp("2.8%"),
+    color: "#666",
+    fontStyle: "italic",
+    marginTop: hp("0.3%"),
+  },
+  statusText: {
+    fontSize: wp("3.5%"),
+    fontWeight: "600",
+    color: "#666",
   },
   modalContainer: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: wp("2%"),
   },
   modalContent: {
     backgroundColor: "white",
-    borderRadius: 16,
-    padding: 24,
-    width: "100%",
-    maxWidth: 400,
+    borderRadius: wp("4%"),
+    padding: wp("4%"),
+    width: wp("90%"),
     alignItems: "center",
-    minHeight: 500,
+    flexGrow: 1,
   },
   successModalContent: {
     backgroundColor: "white",
-    borderRadius: 16,
-    padding: 24,
-    width: "100%",
-    maxWidth: 400,
+    borderRadius: wp("4%"),
+    padding: wp("6%"),
+    width: wp("90%"),
     alignItems: "center",
   },
   avatarSection: {
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: hp("2%"),
   },
   largeAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: wp("18%"),
+    height: wp("18%"),
+    borderRadius: wp("9%"),
     justifyContent: "center",
     alignItems: "center",
     position: "relative",
@@ -579,206 +879,208 @@ const styles = StyleSheet.create({
   largeAvatarImage: {
     width: "100%",
     height: "100%",
-    borderRadius: 40,
+    borderRadius: wp("9%"),
   },
   largeAvatarPlaceholder: {
     width: "100%",
     height: "100%",
-    borderRadius: 40,
+    borderRadius: wp("9%"),
     justifyContent: "center",
     alignItems: "center",
   },
   largeAvatarText: {
-    fontSize: 32,
+    fontSize: wp("7%"),
     fontWeight: "600",
     color: "#333",
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: wp("5%"),
     fontWeight: "600",
     color: "#333",
-    marginBottom: 8,
+    marginBottom: hp("1%"),
   },
   modalSubtitle: {
     color: "#666",
-    marginBottom: 8,
+    fontSize: wp("3.5%"),
+    marginBottom: hp("1%"),
   },
   userInfoSection: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: hp("2%"),
   },
   userNameModal: {
-    fontSize: 18,
+    fontSize: wp("4.5%"),
     fontWeight: "600",
     color: "#333",
-    marginBottom: 4,
+    marginBottom: hp("0.5%"),
   },
   userDetailsModal: {
     color: "#666",
-    fontSize: 14,
+    fontSize: wp("3.5%"),
   },
   relationshipSection: {
     width: "100%",
-    marginBottom: 24,
+    marginBottom: hp("2%"),
+    flex: 1,
   },
   relationshipTitle: {
-    fontSize: 16,
+    fontSize: wp("4%"),
     fontWeight: "600",
     color: "#333",
-    marginBottom: 16,
+    marginBottom: hp("1.5%"),
   },
-  relationshipOptions: {
-    width: "100%",
-    maxHeight: 200,
-  },
-  relationshipOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-    paddingVertical: 4,
-  },
-  radioContainer: {
-    marginRight: 12,
-    width: 20,
-    height: 20,
-  },
-  radioOuter: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#ccc",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "transparent",
-  },
-  radioOuterSelected: {
-    borderColor: "#2196F3",
-    backgroundColor: "#2196F3",
-  },
-  radioInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "white",
-    position: "absolute",
-  },
-  relationshipText: {
-    fontSize: 16,
+  relationshipInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: wp("2%"),
+    paddingHorizontal: wp("3%"),
+    paddingVertical: hp("1.5%"),
+    fontSize: wp("4%"),
     color: "#333",
+    backgroundColor: "#f9f9f9",
+    marginBottom: hp("1.5%"),
+  },
+  suggestionsContainer: {
+    marginTop: hp("1%"),
+  },
+  suggestionsTitle: {
+    fontSize: wp("3.5%"),
+    fontWeight: "500",
+    color: "#666",
+    marginBottom: hp("1%"),
+  },
+  suggestionsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: wp("2%"),
+  },
+  suggestionChip: {
+    backgroundColor: "#e3f2fd",
+    paddingHorizontal: wp("3%"),
+    paddingVertical: hp("0.8%"),
+    borderRadius: wp("4%"),
+    borderWidth: 1,
+    borderColor: "#2196F3",
+  },
+  suggestionText: {
+    fontSize: wp("3.5%"),
+    color: "#2196F3",
+    fontWeight: "500",
   },
   actionButtons: {
     width: "100%",
+    marginTop: hp("1%"),
   },
   confirmButton: {
     backgroundColor: "#2196F3",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: hp("1.5%"),
+    borderRadius: wp("2%"),
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: hp("1%"),
   },
   confirmButtonText: {
     color: "white",
-    fontSize: 16,
+    fontSize: wp("4%"),
     fontWeight: "600",
   },
   cancelButton: {
     backgroundColor: "#f0f0f0",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: hp("1.5%"),
+    borderRadius: wp("2%"),
     alignItems: "center",
   },
   cancelButtonText: {
     color: "#666",
-    fontSize: 16,
+    fontSize: wp("4%"),
     fontWeight: "600",
   },
   successIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: wp("20%"),
+    height: wp("20%"),
+    borderRadius: wp("10%"),
     backgroundColor: "#4CAF50",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: hp("2.5%"),
   },
   successTitle: {
-    fontSize: 20,
+    fontSize: wp("5%"),
     fontWeight: "600",
     color: "#333",
-    marginBottom: 12,
+    marginBottom: hp("1.5%"),
     textAlign: "center",
   },
   successSubtitle: {
     color: "#666",
-    marginBottom: 8,
+    fontSize: wp("4%"),
+    marginBottom: hp("1%"),
     textAlign: "center",
   },
   successUserInfo: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: hp("3%"),
   },
   successUserName: {
-    fontSize: 18,
+    fontSize: wp("4.5%"),
     fontWeight: "600",
     color: "#333",
-    marginBottom: 4,
+    marginBottom: hp("0.5%"),
   },
   successUserRelationship: {
     color: "#666",
-    fontSize: 14,
+    fontSize: wp("3.5%"),
   },
   pendingNotice: {
     width: "100%",
     backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 24,
+    borderRadius: wp("2%"),
+    padding: wp("4%"),
+    marginBottom: hp("3%"),
   },
   pendingNoticeHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: hp("1%"),
   },
   noticeIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: wp("5%"),
+    height: wp("5%"),
+    borderRadius: wp("2.5%"),
     backgroundColor: "#FF9800",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 8,
+    marginRight: wp("2%"),
   },
   noticeTitle: {
-    fontSize: 16,
+    fontSize: wp("4%"),
     fontWeight: "600",
     color: "#333",
   },
   noticeText: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     color: "#666",
-    lineHeight: 20,
+    lineHeight: hp("2.5%"),
   },
   closeButton: {
     backgroundColor: "#2196F3",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: hp("1.5%"),
+    borderRadius: wp("2%"),
     alignItems: "center",
     width: "100%",
   },
   closeButtonText: {
     color: "white",
-    fontSize: 16,
+    fontSize: wp("4%"),
     fontWeight: "600",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 50,
+    paddingVertical: hp("6%"),
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: wp("4%"),
     color: "#666",
     textAlign: "center",
   },
@@ -786,19 +1088,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 50,
+    paddingVertical: hp("6%"),
   },
   searchIconLarge: {
-    marginBottom: 16,
+    marginBottom: hp("2%"),
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: wp("4%"),
     color: "#999",
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: hp("1%"),
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: wp("3.5%"),
     color: "#ccc",
     textAlign: "center",
   },

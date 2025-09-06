@@ -14,7 +14,6 @@ const relationshipSchema = new mongoose.Schema({
   relationship: {
     type: String,
     required: true,
-    enum: ['child', 'spouse', 'sibling', 'parent', 'grandchild', 'relative', 'friend', 'caregiver']
   },
   status: {
     type: String,
