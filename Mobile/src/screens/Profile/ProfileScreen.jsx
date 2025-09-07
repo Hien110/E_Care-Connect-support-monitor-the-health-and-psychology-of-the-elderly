@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import userService from '../../services/userService';
-
+import { useFocusEffect } from '@react-navigation/native';
 const THEME = {
   primary: '#0046FF',
   primarySoft: '#E8EFFF',
@@ -57,6 +57,12 @@ const ProfileScreen = ({ navigation }) => {
     }
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchUser();
+    }, [fetchUser])
+  );
+
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
@@ -77,7 +83,7 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const goBack = () => navigation?.goBack?.();
+  const goBack = () => navigation.navigate('PersonalInfo');
 
   const onEditAvatar = () => {
     // TODO: Mở ActionSheet chọn ảnh từ thư viện / camera
@@ -85,10 +91,19 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const onEditField = (field) => {
-    // TODO: Điều hướng sang trang chỉnh sửa hoặc mở modal chỉnh sửa
+  if (!navigation) return;
+
+  if (field === 'phoneNumber') {
+    navigation.navigate('ChangePhonenumber', {
+      currentPhoneNumber: user?.phoneNumber || '',
+    });
+  } else if (field === 'email') {
+    // sau này nếu bạn làm màn đổi email
+    navigation.navigate('ChangeEmail', { currentEmail: user?.email || '' });
+  } else {
     console.log('Edit field:', field);
-    // navigation.navigate('EditProfile', { field, value: user?.[field] })
-  };
+  }
+};
 
   const onSubmitChanges = () => {
     // TODO: Submit thay đổi / hoặc điều hướng sang form
@@ -141,7 +156,7 @@ const ProfileScreen = ({ navigation }) => {
           style={styles.headerIconBtn}
           onPress={() => onEditField('all')}
         >
-          
+
         </TouchableOpacity>
       } />
 
@@ -154,18 +169,18 @@ const ProfileScreen = ({ navigation }) => {
         {/* Profile Card */}
         <View style={[styles.card, styles.center]}>
           <View style={styles.avatarWrapper}>
-          <Image
-            source={{
-              uri:
-                user.avatar ||
-                'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-mAf0Q5orw3lJzIC2j6NFU6Ik2VNcgB.png',
-            }}
-            style={styles.profileImage}
-          />
-          <TouchableOpacity style={styles.editAvatarButton}>
-            <Icon name="pencil" size={16} color="#fff" />
-          </TouchableOpacity>
-        </View>
+            <Image
+              source={{
+                uri:
+                  user.avatar ||
+                  'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-mAf0Q5orw3lJzIC2j6NFU6Ik2VNcgB.png',
+              }}
+              style={styles.profileImage}
+            />
+            <TouchableOpacity style={styles.editAvatarButton}>
+              <Icon name="pencil" size={16} color="#fff" />
+            </TouchableOpacity>
+          </View>
 
 
           <Text style={styles.name}>{user?.fullName || '—'}</Text>
@@ -294,27 +309,27 @@ const styles = StyleSheet.create({
 
   /* Avatar + Name */
   avatarWrapper: {
-  position: 'relative',
-  width: 100,
-  height: 100,
-},
-profileImage: {
-  width: '100%',
-  height: '100%',
-  borderRadius: 50,
-  backgroundColor: '#f5f5f5',
-},
-editAvatarButton: {
-  position: 'absolute',
-  bottom: 0,
-  right: 0,
-  backgroundColor: '#007AFF',
-  borderRadius: 16,
-  padding: 6,
-  borderWidth: 2,
-  borderColor: '#fff', // viền trắng để nổi bật
-  elevation: 3, // đổ bóng nhẹ trên Android
-},
+    position: 'relative',
+    width: 100,
+    height: 100,
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 50,
+    backgroundColor: '#f5f5f5',
+  },
+  editAvatarButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#007AFF',
+    borderRadius: 16,
+    padding: 6,
+    borderWidth: 2,
+    borderColor: '#fff', // viền trắng để nổi bật
+    elevation: 3, // đổ bóng nhẹ trên Android
+  },
 
 
   name: {

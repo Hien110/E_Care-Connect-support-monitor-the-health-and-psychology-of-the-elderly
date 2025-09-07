@@ -37,44 +37,38 @@ export default function LoginScreen() {
     family: "FamilyMemberHome",
     supporter: "SupporterHome",
   };
-  // 👉 Nếu đã có token thì vào thẳng Home
   useEffect(() => {
-    let mounted = true;
+  let mounted = true;
 
-    (async () => {
-      try {
-        const token = await AsyncStorage.getItem('ecare_token');
-        if (!token) return; 
+  (async () => {
+    try {
+      const token = await userService.getToken();
+      if (!token) return; 
 
-        await userService.setToken(token);
-
-        let user = null;
-        const userStr = await userService.getItem('ecare_user');
-        if (userStr) {
-          try { user = JSON.parse(userStr); } catch { }
+      let user = await userService.getUser();
+      if (!user) {
+        const res = await userService.getUserInfo();
+        if (res?.success) {
+          user = res.data?.user || res.data;
+          await userService.setUser(user);
+        } else {
+          await userService.logout?.();
+          return;
         }
-
-        if (!user) {
-          const res = await userService.getUserInfo();
-          if (res?.success) {
-            user = res.data?.user || res.data;
-            await userService.setUser(user); 
-          }
-        }
-
-        if (!mounted) return;
-
-        const routeName = ROLE_TO_ROUTE[user?.role] || FALLBACK_ROUTE;
-        nav.reset({ index: 0, routes: [{ name: routeName }] });
-      } catch (e) {
-        try {
-          await userService.logout?.(); 
-        } catch { }
       }
-    })();
 
-    return () => { mounted = false; };
-  }, [nav]);
+      if (!mounted) return;
+
+      const routeName = ROLE_TO_ROUTE[user?.role] || FALLBACK_ROUTE;
+      nav.reset({ index: 0, routes: [{ name: routeName }] });
+    } catch (e) {
+      await userService.logout?.();
+    }
+  })();
+
+  return () => { mounted = false; };
+}, [nav]);
+
 
   // Animation
   useEffect(() => {
