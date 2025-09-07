@@ -15,6 +15,10 @@ import PersonalInfoScreen from '../screens/Profile/PersonalInfoScreen.jsx';
 import FamilyMemberHomeScreen from '../screens/Site/FamilyHomeScreen.jsx';
 import SupporterHomeScreen from '../screens/Site/SupporterHomeScreen';
 import DefaultScreen from '../screens/Error/DefaultScreen';
+import ChangePhonenumberScreen from '../screens/Auth/ChangePhonenumberScreen.jsx';
+import OtPChangePhoneScreen from '../screens/Auth/OTPChangePhoneScreen.jsx';
+import ChangeEmailScreen from '../screens/Auth/ChangeEmailScreen.jsx';
+import OTPChangeEmailScreen from '../screens/Auth/OTPChangeEmailScreen.jsx';
 // HOC footer
 import withFooter from '../components/withFooter';
 
@@ -69,6 +73,27 @@ const AppNavigator = () => {
         <Stack.Screen
           name="DefaultScreen"
           component={DefaultScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ChangePhonenumber"
+          component={ChangePhonenumberScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="OTPChangePhone"
+          component={OtPChangePhoneScreen}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="ChangeEmail"
+          component={ChangeEmailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="OTPChangeEmail"
+          component={OTPChangeEmailScreen}
           options={{ headerShown: false }}
         />
 

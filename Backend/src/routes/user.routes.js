@@ -22,6 +22,10 @@ router.post("/forgot-password/send-otp", UserController.sendForgotPasswordOTP);
 router.post("/forgot-password/verify-otp", UserController.verifyForgotPasswordOTP);
 router.post("/forgot-password/reset", UserController.resetPassword);
 
+router.post('/change-phone/send-otp', authenticateToken, UserController.changePhoneSendOTP);
+router.post('/change-phone/verify', authenticateToken, UserController.changePhoneVerify);
+router.post("/change-email/send-otp", authenticateToken, UserController.changeEmailSendOTP);
+router.post("/change-email/verify", authenticateToken, UserController.changeEmailVerify);
 router.use(authenticateToken);
 router.get("/getUserInfo", UserController.getUserInfo);
 // Thay đổi mật khẩu
