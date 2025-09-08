@@ -4,6 +4,7 @@ const router = express.Router();
 
 const UserController = require("../app/controllers/userController");
 const authenticateToken = require("../app/middlewares/authMiddleware");
+const { upload } = require('../app/middlewares/upload');
 
 
 router.post("/registerUser", UserController.registerUser);
@@ -32,5 +33,7 @@ router.get("/getUserInfo", UserController.getUserInfo);
 router.put("/change-password", UserController.changePassword);
 // Lấy danh sách người già
 router.get("/get-elderly", UserController.getAllElderly);
+// Update avatar người dùng
+router.post("/me/avatar", authenticateToken, upload.single("avatar"), UserController.updateAvatar);
 
 module.exports = router;

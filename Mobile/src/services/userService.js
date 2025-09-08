@@ -282,5 +282,46 @@ verifyChangeEmailOTP: async ({ email, otp }) => {
       };
     }
   },
+  updateAvatar: async (file) => {
+  console.log('[userService.updateAvatar] file nhận được:', file);
+
+  const formData = new FormData();
+  formData.append("avatar", {
+    uri: file.uri,
+    type: file.type,
+    name: file.name,
+  });
+
+  try {
+    const token = await userService.getToken();
+    console.log('[userService.updateAvatar] token:', token);
+
+    const response = await api.post("/users/me/avatar", formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    console.log('[userService.updateAvatar] raw response:', response.data);
+
+    return {
+      success: true,
+      data: response.data?.data,
+      message: response.data?.message || "Cập nhật avatar thành công",
+    };
+  } catch (error) {
+    console.log('[userService.updateAvatar] axios error:', {
+      status: error?.response?.status,
+      data: error?.response?.data,
+      message: error.message,
+    });
+    return {
+      success: false,
+      message: error?.response?.data?.message || error.message,
+    };
+  }
+},
+
 }
 export default userService;

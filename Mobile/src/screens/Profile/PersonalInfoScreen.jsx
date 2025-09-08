@@ -24,6 +24,7 @@ const TEXT = '#111827';
 const SUB = '#8A8F98';
 const LIGHT = '#EAF2FF';
 
+
 const AVATAR_FALLBACK =
   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-mAf0Q5orw3lJzIC2j6NFU6Ik2VNcgB.png';
 
@@ -117,6 +118,7 @@ const PersonalInfoScreen = ({ navigation }) => {
         <View style={styles.ellipseOverlay} />
 
         {/* avatar đè mép xanh–trắng */}
+        
         <View style={styles.avatarWrap}>
           {loading ? (
             <View style={[styles.avatar, { alignItems: 'center', justifyContent: 'center' }]}>
@@ -237,8 +239,8 @@ const styles = StyleSheet.create({
     height: AVATAR,
     borderRadius: AVATAR / 2,
     overflow: 'hidden',
-    borderWidth: 4,
-    borderColor: WHITE,
+    borderWidth: 3,
+    borderColor: '#6B7280',
     backgroundColor: '#f5f5f5',
     zIndex: 10,
   },
