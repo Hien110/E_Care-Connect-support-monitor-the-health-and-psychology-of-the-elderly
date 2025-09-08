@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,23 @@ const ChangePasswordScreen = ({ navigation }) => {
 
   const [loading, setLoading] = useState(false);
 
+  const [user, setUser] = useState(null); // Lưu thông tin user để xác định điều hướng
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await userService.getUser?.();
+        if (res?.success) setUser(res.data || null);
+        else setUser(null);
+      } catch {
+        setUser(null);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Hàm validate
+
   const validate = () => {
     if (!oldPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
       setError('Vui lòng nhập đầy đủ thông tin.');
@@ -53,6 +70,7 @@ const ChangePasswordScreen = ({ navigation }) => {
     }
     return true;
   };
+  
 
   const handleChangePassword = async () => {
     if (!validate()) return;
@@ -70,16 +88,13 @@ const ChangePasswordScreen = ({ navigation }) => {
           description:
             res.message ||
             'Bạn đã đổi mật khẩu thành công! Quay lại trang chủ.',
+          navigate: user?.role === 'elderly' ? 'ElderHome' : 'FamilyMemberHome',
         });
       } else {
-        Alert.alert(
-          'Lỗi',
-          res?.message || 'Không thể đổi mật khẩu. Vui lòng thử lại.',
-        );
+        setError(res?.message || 'Đổi mật khẩu thất bại, vui lòng thử lại.');
       }
     } catch (e) {
-      console.error('Change password error:', e);
-      Alert.alert('Lỗi', 'Có lỗi xảy ra, vui lòng thử lại.');
+      setError('Có lỗi xảy ra, vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
