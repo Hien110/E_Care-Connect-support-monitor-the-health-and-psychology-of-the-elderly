@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -58,6 +59,15 @@ const PersonalInfoScreen = ({ navigation }) => {
     await fetchUser();
     setRefreshing(false);
   }, [fetchUser]);
+
+  const onLogout = useCallback(async () => {
+    try {
+      await userService.logout?.();
+      await AsyncStorage.multiRemove(["ecare_token", "ecare_user"]);
+    } finally {
+      nav.reset({ index: 0, routes: [{ name: "Login" }] });
+    }
+  }, [nav]);
 
   const goBack = () => navigation?.goBack?.();
 
@@ -172,7 +182,7 @@ const PersonalInfoScreen = ({ navigation }) => {
             icon="logout"
             color="#F44336"
             title="Đăng xuất"
-            onPress={() => {}}
+            onPress={onLogout}
           />
         </View>
 
