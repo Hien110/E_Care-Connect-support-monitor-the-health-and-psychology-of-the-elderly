@@ -19,6 +19,11 @@ import ChangePhonenumberScreen from '../screens/Auth/ChangePhonenumberScreen.jsx
 import OtPChangePhoneScreen from '../screens/Auth/OTPChangePhoneScreen.jsx';
 import ChangeEmailScreen from '../screens/Auth/ChangeEmailScreen.jsx';
 import OTPChangeEmailScreen from '../screens/Auth/OTPChangeEmailScreen.jsx';
+import FindPeopleScreen from '../screens/Connect-family/FindPeopleScreen';
+import FamilyConnectionScreen from '../screens/Connect-family/FamilyConnectionScreen';
+import FamilyConnectionListScreen from '../screens/Connect-family/FamilyConnectionListScreen';
+import FamilyList_FamilyScreen from '../screens/Connect-family/FamilyList_FamilyScreen';
+
 // HOC footer
 import withFooter from '../components/withFooter';
 
@@ -115,7 +120,27 @@ const AppNavigator = () => {
         />
         <Stack.Screen
           name="PersonalInfo"
-          component={withFooter(PersonalInfoScreen, 'me')}
+          component={PersonalInfoScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FindPeople"
+          component={FindPeopleScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FamilyConnection"
+          component={FamilyConnectionScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FamilyConnectionList"
+          component={FamilyConnectionListScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FamilyList_Family"
+          component={FamilyList_FamilyScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

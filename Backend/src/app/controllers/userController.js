@@ -835,6 +835,21 @@ const UserController = {
       return res.status(500).json({ success: false, message: err.message });
     }
   },
+  getAllElderly: async (req, res) => {
+    try {
+      const elderlyUsers = await User.find({ role: "elderly" }).select("-password");
+      return res.status(200).json({
+        success: true,
+        data: elderlyUsers
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({
+        success: false,
+        message: err.message
+      });
+    }
+  }
 };
 
 module.exports = UserController;

@@ -30,5 +30,7 @@ router.use(authenticateToken);
 router.get("/getUserInfo", UserController.getUserInfo);
 // Thay đổi mật khẩu
 router.put("/change-password", UserController.changePassword);
+// Lấy danh sách người già
+router.get("/get-elderly", UserController.getAllElderly);
 
 module.exports = router;

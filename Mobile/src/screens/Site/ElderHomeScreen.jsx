@@ -162,7 +162,15 @@ export default function HomeScreen() {
         </Section>
 
         {/* Family */}
-        <Section title="Kết nối gia đình" icon="👨‍👩‍👧" color="#F43F5E">
+        <Section title="Kết nối gia đình" icon="👨‍👩‍👧" color="#F43F5E" onTitlePress={() => nav.navigate('FamilyConnection')}>
+          <TouchableOpacity 
+            style={[styles.secChip, { backgroundColor: hexWithAlpha("#F43F5E", 0.12), alignSelf: 'flex-start' }]} 
+            onPress={() => nav.navigate('FamilyConnectionList')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.secChipText, { color: "#F43F5E" }]}>👥</Text>
+            <Text style={[styles.secChipText, { color: "#F43F5E", marginLeft: 6 }]}>Danh sách gia đình</Text>
+          </TouchableOpacity>
           <View style={styles.familyRow}>
             <ContactCard icon="👨" title="Con trai" sub="Minh Tuấn" onPress={() => callFamily("son")} />
             <ContactCard icon="👩" title="Con gái" sub="Thu Hằng" onPress={() => callFamily("daughter")} />
@@ -253,14 +261,19 @@ export default function HomeScreen() {
 }
 
 /* ===================== SUBCOMPONENTS ===================== */
-function Section({ title, icon, color, rightText, onRightPress, children }) {
+function Section({ title, icon, color, rightText, onRightPress, onTitlePress, children }) {
+  const TitleComponent = onTitlePress ? TouchableOpacity : View;
   return (
     <View style={styles.section}>
       <View style={styles.secHeader}>
-        <View style={[styles.secChip, { backgroundColor: hexWithAlpha(color, 0.12) }]}>
+        <TitleComponent
+          style={[styles.secChip, { backgroundColor: hexWithAlpha(color, 0.12) }]}
+          onPress={onTitlePress}
+          activeOpacity={0.8}
+        >
           <Text style={[styles.secChipText, { color }]}>{icon}</Text>
           <Text style={[styles.secChipText, { color, marginLeft: 6 }]}>{title}</Text>
-        </View>
+        </TitleComponent>
         {rightText ? (
           <TouchableOpacity onPress={onRightPress} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Text style={styles.secRight}>{rightText}</Text>
