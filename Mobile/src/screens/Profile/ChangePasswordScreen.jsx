@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -29,7 +29,22 @@ const ChangePasswordScreen = ({ navigation }) => {
 
   const [loading, setLoading] = useState(false);
 
-  const user = userService.getUser();
+  const [user, setUser] = useState(null); // Lưu thông tin user để xác định điều hướng
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await userService.getUser?.();
+        if (res?.success) setUser(res.data || null);
+        else setUser(null);
+      } catch {
+        setUser(null);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Hàm validate
 
   const validate = () => {
     if (!oldPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
@@ -55,6 +70,7 @@ const ChangePasswordScreen = ({ navigation }) => {
     }
     return true;
   };
+  
 
   const handleChangePassword = async () => {
     if (!validate()) return;
@@ -66,27 +82,19 @@ const ChangePasswordScreen = ({ navigation }) => {
         newPassword: newPassword.trim(),
       });
 
-      let pageToNavigate;
-      if (user?.role === 'elderly') pageToNavigate = 'ElderHome';
-      else if (user?.role === 'FamilyMemberHome') pageToNavigate = 'CaregiverHome';
-      else pageToNavigate = 'SupporterHome';
       if (res?.success) {
         navigation.navigate('SuccessScreen', {
           title: 'Đổi mật khẩu thành công',
           description:
             res.message ||
             'Bạn đã đổi mật khẩu thành công! Quay lại trang chủ.',
-          navigate: pageToNavigate,
+          navigate: user?.role === 'elderly' ? 'ElderHome' : 'FamilyMemberHome',
         });
       } else {
-        Alert.alert(
-          'Lỗi',
-          res?.message || 'Không thể đổi mật khẩu. Vui lòng thử lại.',
-        );
+        setError(res?.message || 'Đổi mật khẩu thất bại, vui lòng thử lại.');
       }
     } catch (e) {
-      console.error('Change password error:', e);
-      Alert.alert('Lỗi', 'Có lỗi xảy ra, vui lòng thử lại.');
+      setError('Có lỗi xảy ra, vui lòng thử lại.');
     } finally {
       setLoading(false);
     }

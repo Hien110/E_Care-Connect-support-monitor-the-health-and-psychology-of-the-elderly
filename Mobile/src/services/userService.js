@@ -44,12 +44,18 @@ export const userService = {
 
   // --- USER ---
   getUser: async () => {
-    if (memoryUser) return memoryUser;
+    if (memoryUser) return {
+      success: true,
+      data: memoryUser,
+    };
 
     if (RNStorage) {
       const userStr = await RNStorage.getItem('ecare_user');
       memoryUser = userStr ? JSON.parse(userStr) : null;
-      return memoryUser;
+      return {
+        success: true,
+        data: memoryUser,
+      };
     }
 
     return null;
