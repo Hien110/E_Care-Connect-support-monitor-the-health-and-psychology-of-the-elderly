@@ -29,6 +29,8 @@ const ChangePasswordScreen = ({ navigation }) => {
 
   const [loading, setLoading] = useState(false);
 
+  const user = userService.getUser();
+
   const validate = () => {
     if (!oldPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
       setError('Vui lòng nhập đầy đủ thông tin.');
@@ -64,12 +66,17 @@ const ChangePasswordScreen = ({ navigation }) => {
         newPassword: newPassword.trim(),
       });
 
+      let pageToNavigate;
+      if (user?.role === 'elderly') pageToNavigate = 'ElderHome';
+      else if (user?.role === 'FamilyMemberHome') pageToNavigate = 'CaregiverHome';
+      else pageToNavigate = 'SupporterHome';
       if (res?.success) {
         navigation.navigate('SuccessScreen', {
           title: 'Đổi mật khẩu thành công',
           description:
             res.message ||
             'Bạn đã đổi mật khẩu thành công! Quay lại trang chủ.',
+          navigate: pageToNavigate,
         });
       } else {
         Alert.alert(

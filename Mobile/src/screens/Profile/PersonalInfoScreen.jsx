@@ -174,7 +174,7 @@ const PersonalInfoScreen = ({ navigation }) => {
             icon="lock"
             color="#FF9800"
             title="Thay đổi mật khẩu"
-            onPress={() => {}}
+            onPress={() => {nav.navigate('ChangePassword');}}
           />
           <MenuItem
             bg="#FFEBEE"
