@@ -24,6 +24,7 @@ import FamilyConnectionScreen from '../screens/Connect-family/FamilyConnectionSc
 import FamilyConnectionListScreen from '../screens/Connect-family/FamilyConnectionListScreen';
 import FamilyList_FamilyScreen from '../screens/Connect-family/FamilyList_FamilyScreen';
 import MessagesListScreen from '../screens/Messages/MessagesListScreen';
+import ChatScreen from '../screens/Messages/ChatScreen.jsx';
 
 // HOC footer
 import withFooter from '../components/withFooter';
@@ -33,7 +34,7 @@ const Stack = createStackNavigator();
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="MessagesList">
+      <Stack.Navigator initialRouteName="Chat">
         <Stack.Screen
           name="Login"
           component={LoginScreen}
@@ -147,6 +148,11 @@ const AppNavigator = () => {
         <Stack.Screen
           name="MessagesList"
           component={withFooter(MessagesListScreen, 'me')}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Chat"
+          component={withFooter(ChatScreen, 'me')}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
