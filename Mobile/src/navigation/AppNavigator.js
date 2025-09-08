@@ -34,7 +34,7 @@ const Stack = createStackNavigator();
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Chat">
+      <Stack.Navigator initialRouteName="Login">
         <Stack.Screen
           name="Login"
           component={LoginScreen}
@@ -152,7 +152,7 @@ const AppNavigator = () => {
         />
         <Stack.Screen
           name="Chat"
-          component={withFooter(ChatScreen, 'me')}
+          component={ChatScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
