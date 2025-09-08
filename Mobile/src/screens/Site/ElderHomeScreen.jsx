@@ -38,7 +38,7 @@ export default function HomeScreen() {
           } catch {}
         }
         const res = await userService.getUser();
-        if (res?.success && res?.data) {
+        if (res?.success && res?.data) { 
           setUser(res.data);
           await AsyncStorage.setItem("ecare_user", JSON.stringify(res.data));
         }

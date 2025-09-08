@@ -41,7 +41,7 @@ const PersonalInfoScreen = ({ navigation }) => {
     try {
       setError('');
       setLoading(true);
-      const res = await userService.getUserInfo?.();
+      const res = await userService.getUser?.();
       if (res?.success) setUser(res.data || null);
       else { setUser(null); setError(res?.message || 'Không tải được thông tin người dùng.'); }
     } catch {
@@ -174,7 +174,7 @@ const PersonalInfoScreen = ({ navigation }) => {
             icon="lock"
             color="#FF9800"
             title="Thay đổi mật khẩu"
-            onPress={() => {}}
+            onPress={() => {nav.navigate('ChangePassword');}}
           />
           <MenuItem
             bg="#FFEBEE"

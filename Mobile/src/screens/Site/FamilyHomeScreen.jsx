@@ -152,9 +152,9 @@ export default function EnhancedHealthAppRN() {
     let mounted = true;
     (async () => {
       try {
-        const res = await userService.getUserInfo();
+        const res = await userService.getUser();
         if (mounted && res?.success) {
-          setMe(res.data?.user || res.data);
+          setMe(res.data);
         }
       } finally {
         mounted && setLoading(false);
