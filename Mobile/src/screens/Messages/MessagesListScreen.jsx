@@ -108,26 +108,13 @@ const MessagesListScreen = () => {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Icon name="search" size={24} color="#999" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Tìm kiếm cuộc trò chuyện..."
             placeholderTextColor="#999"
           />
         </View>
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.newChatButton}>
-          <Text style={styles.plusIcon}>+</Text>
-          <Text style={styles.newChatText}>Cuộc trò chuyện mới</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.doctorButton}>
-          <Text style={styles.doctorIcon}>👨‍⚕️</Text>
-          <Text style={styles.doctorText}>Bác sĩ</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Conversations List */}
@@ -156,14 +143,18 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    justifyContent: 'center',
   },
   backButton: {
+    position: 'absolute',
+    left: 16,
     padding: 8,
   },
   headerTitle: {
     color: 'white',
     fontSize: 20,
     fontWeight: '600',
+    textAlign: 'center',
   },
   searchContainer: {
     backgroundColor: '#2196F3',
@@ -186,51 +177,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#333',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 12,
-  },
-  newChatButton: {
-    backgroundColor: '#2196F3',
-    borderRadius: 25,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    flex: 1,
-  },
-  plusIcon: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginRight: 8,
-  },
-  newChatText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  doctorButton: {
-    backgroundColor: 'white',
-    borderRadius: 25,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  doctorIcon: {
-    marginRight: 8,
-    fontSize: 16,
-  },
-  doctorText: {
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '500',
   },
   conversationsList: {
     flex: 1,

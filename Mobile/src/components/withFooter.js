@@ -6,7 +6,7 @@ const routeMap = {
   home: 'Home',        // trang chủ
   mood: 'MOOD',
   plan: 'PLAN',
-  messages: 'MESSAGES',
+  messages: 'MessagesList',
   me: 'PersonalInfo',
 };
 
