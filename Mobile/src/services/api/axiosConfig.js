@@ -1,5 +1,6 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import userService from "../userService";
 
 export const BASE_URL = "http://10.12.32.210:3000/api";
 
@@ -25,7 +26,7 @@ const api = axios.create({
 // Gắn Authorization mỗi request
 api.interceptors.request.use(
   async (config) => {
-    const token = await getAPIToken();
+    const token = await userService.getToken();
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
