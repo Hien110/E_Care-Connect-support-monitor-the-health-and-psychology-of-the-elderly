@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { userService } from '../../services/userService';
+import { launchCamera } from 'react-native-image-picker';
+import { PermissionsAndroid, Platform } from 'react-native';
 import logo from '../../assets/logoE_Care.png';
 import { useNavigation } from '@react-navigation/native';
 import { useRef } from 'react';
@@ -43,6 +45,9 @@ export default function RegistersScreen() {
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState('male');
+  const [address, setAddress] = useState('');
+  const [frontImage, setFrontImage] = useState(null);
+  const [backImage, setBackImage] = useState(null);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [phoneError, setPhoneError] = useState('');
@@ -56,11 +61,15 @@ export default function RegistersScreen() {
     }
     return () => {
       clearInterval(timer);
-      if (phoneNumber && step > 1 && step < 4) {
-        cleanupOnExit();
-      }
     };
   }, [step, countdown]);
+
+  // Chỉ cleanup khi màn hình unmount (thoát flow), không chạy mỗi lần countdown thay đổi
+  useEffect(() => {
+    return () => {
+      cleanupOnExit();
+    };
+  }, []);
 
   const cleanupOnExit = async () => {
     if (phoneNumber && step > 1 && step < 4) {
@@ -123,31 +132,93 @@ export default function RegistersScreen() {
     }
   };
 
-  const handleSetIdentity = async () => {
-    if (!identityCard) return;
+  const requestCameraPermissions = async () => {
+    if (Platform.OS !== 'android') return true;
+    try {
+      const camera = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.CAMERA
+      );
+      // Android 13+
+      const readImages = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
+      ).catch(() => PermissionsAndroid.RESULTS.GRANTED);
+      // Older Android
+      const readStorage = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
+      ).catch(() => PermissionsAndroid.RESULTS.GRANTED);
+
+      const ok =
+        camera === PermissionsAndroid.RESULTS.GRANTED &&
+        (readImages === PermissionsAndroid.RESULTS.GRANTED ||
+          readStorage === PermissionsAndroid.RESULTS.GRANTED);
+      if (!ok) {
+        Alert.alert('Quyền bị từ chối', 'Vui lòng cấp quyền Camera và Ảnh.');
+      }
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const captureSide = async (side) => {
+    const hasPerm = await requestCameraPermissions();
+    if (!hasPerm) return null;
+    const result = await launchCamera({
+      mediaType: 'photo',
+      includeBase64: true,
+      quality: 0.9,
+      cameraType: 'back',
+      saveToPhotos: false,
+      includeExtra: true,
+    });
+    if (result?.errorCode) {
+      Alert.alert('Lỗi Camera', result.errorMessage || result.errorCode);
+      return null;
+    }
+    if (result?.didCancel) {
+      return null;
+    }
+    const asset = result?.assets?.[0];
+    if (!asset?.base64) {
+      Alert.alert('Lỗi', 'Không nhận được ảnh từ camera');
+      return null;
+    }
+    const base64 = `data:${asset.type};base64,${asset.base64}`;
+    if (side === 'front') setFrontImage(base64);
+    if (side === 'back') setBackImage(base64);
+    return base64;
+  };
+
+  const handleExtractFromImages = async () => {
+    if (!frontImage || !backImage) return;
     try {
       setLoading(true);
-      const res = await userService.setIdentity({ phoneNumber, identityCard });
+      const res = await userService.uploadIdentity({ phoneNumber, frontImageBase64: frontImage, backImageBase64: backImage });
       setLoading(false);
       if (res.success) {
+        setIdentityCard(res.data.identityCard || '');
+        setFullName(res.data.fullName || '');
+        setDateOfBirth(res.data.dateOfBirth || '');
+        setGender(res.data.gender || 'other');
+        setAddress(res.data.address || '');
         setStep(4);
+      } else {
+        console.error('Upload identity failed:', res.message);
+        Alert.alert('Lỗi', res.message || 'Không thể trích xuất từ ảnh');
       }
     } catch (e) {
       setLoading(false);
+      const msg = e?.response?.data?.message || e?.message || 'Upload identity error';
+      console.error('Upload identity exception:', msg);
+      Alert.alert('Lỗi', msg);
     }
   };
 
   const handleComplete = async () => {
-    if (!fullName || !gender || !password) return;
+    if (!password) return;
     try {
       setLoading(true);
-      const res = await userService.completeProfile({
-        phoneNumber,
-        fullName,
-        dateOfBirth,
-        gender,
-        password,
-      });
+      const res = await userService.completeProfile({ phoneNumber, password });
       setLoading(false);
       if (res.success) {
         Alert.alert('Đăng Ký Thành Công');
@@ -447,7 +518,7 @@ export default function RegistersScreen() {
         </View>
       )}
 
-      {/* STEP 3 nhập CCCD */}
+      {/* STEP 3: Chụp CCCD 2 mặt */}
       {step === 3 && (
         <View style={{ marginTop: 20 }}>
           <TouchableOpacity
@@ -463,25 +534,15 @@ export default function RegistersScreen() {
               style={{ width: 80, height: 80, resizeMode: 'contain' }}
             />
           </View>
-          <Text>Nhập số CCCD / CMND</Text>
-          <TextInput
-            placeholder="012345678"
-            value={identityCard}
-            onChangeText={setIdentityCard}
-            keyboardType="number-pad"
-            style={{
-              borderWidth: 1,
-              borderColor: '#ccc',
-              padding: 10,
-              borderRadius: 8,
-              marginTop: 8,
-            }}
-          />
-          <Btn title="Lưu CCCD" onPress={handleSetIdentity} />
+          <Text>Chụp mặt trước CCCD</Text>
+          <Btn title="Chụp mặt trước" onPress={() => captureSide('front')} />
+          <Text style={{ marginTop: 12 }}>Chụp mặt sau CCCD</Text>
+          <Btn title="Chụp mặt sau" onPress={() => captureSide('back')} />
+          <Btn title="Trích xuất thông tin" onPress={handleExtractFromImages} disabled={!(frontImage && backImage)} />
         </View>
       )}
 
-      {/* STEP 4 hoàn tất */}
+      {/* STEP 4 hoàn tất: hiển thị thông tin từ CCCD, chỉ nhập mật khẩu */}
       {step === 4 && (
         <View style={{ marginTop: 20 }}>
           <TouchableOpacity
@@ -497,48 +558,12 @@ export default function RegistersScreen() {
               style={{ width: 80, height: 80, resizeMode: 'contain' }}
             />
           </View>
-          <Text>Hoàn tất hồ sơ</Text>
-          <TextInput
-            placeholder="Họ và tên"
-            value={fullName}
-            onChangeText={setFullName}
-            style={{
-              borderWidth: 1,
-              borderColor: '#ccc',
-              padding: 10,
-              borderRadius: 8,
-              marginTop: 8,
-            }}
-          />
-          <TextInput
-            placeholder="Ngày sinh (yyyy-mm-dd)"
-            value={dateOfBirth}
-            onChangeText={setDateOfBirth}
-            style={{
-              borderWidth: 1,
-              borderColor: '#ccc',
-              padding: 10,
-              borderRadius: 8,
-              marginTop: 8,
-            }}
-          />
-          <View style={{ flexDirection: 'row', marginTop: 8 }}>
-            {['male', 'female', 'other'].map(g => (
-              <TouchableOpacity
-                key={g}
-                onPress={() => setGender(g)}
-                style={{
-                  padding: 10,
-                  borderWidth: 1,
-                  borderColor: gender === g ? '#007bff' : '#ccc',
-                  marginRight: 8,
-                  borderRadius: 8,
-                }}
-              >
-                <Text>{g}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <Text>Thông tin nhận diện từ CCCD</Text>
+          <TextInput editable={false} value={fullName} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000' }} />
+          <TextInput editable={false} value={dateOfBirth} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000' }} />
+          <TextInput editable={false} value={gender} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000' }} />
+          <TextInput editable={false} value={identityCard} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000' }} />
+          <TextInput editable={false} value={address} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000' }} />
           <TextInput
             placeholder="Mật khẩu (>=6 ký tự)"
             value={password}

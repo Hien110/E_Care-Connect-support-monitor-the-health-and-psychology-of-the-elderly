@@ -94,6 +94,20 @@ const userService = {
       };
     }
   },
+  
+  // Lấy dữ liệu đăng ký tạm (bao gồm ocrData) để máy tính auto-fill sau khi điện thoại đã upload
+  getTempRegister: async ({ phoneNumber }) => {
+    try {
+      const res = await api.get(`/temp-register`, { params: { phoneNumber } });
+      return { success: true, data: res.data?.data };
+    } catch (error) {
+      return {
+        success: false,
+        data: null,
+        message: error?.response?.data?.message || 'Không tìm thấy dữ liệu tạm',
+      };
+    }
+  },
 
   // Đăng xuất
   logout: () => {

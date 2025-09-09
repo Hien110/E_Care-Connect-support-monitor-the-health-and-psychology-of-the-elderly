@@ -7,6 +7,7 @@ const hashPassword = require("../../utils/hashPassword");
 const redis = require("../../utils/redis");
 const avatarDefault =
   "https://i.pinimg.com/736x/c6/e5/65/c6e56503cfdd87da299f72dc416023d4.jpg";
+const { extractIdentityData } = require("../../utils/ocr");
 
 function generate4Digits() {
   return Math.floor(1000 + Math.random() * 9000).toString();
@@ -49,6 +50,69 @@ const UserController = {
     }
   },
 
+  // Nhận ảnh CCCD 2 mặt hoặc identityCard -> trích xuất thông tin -> lưu Redis tempRegister:{phone}
+  uploadIdentityImage: async (req, res) => {
+    try {
+      const { phoneNumber, identityCard, frontImageBase64, backImageBase64 } = req.body;
+      if (!phoneNumber || (!identityCard && !(frontImageBase64 && backImageBase64))) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Thiếu dữ liệu: cần identityCard hoặc ảnh CCCD 2 mặt" });
+      }
+
+      const key = `tempRegister:${phoneNumber}`;
+      const dataStr = await redis.get(key);
+      if (!dataStr) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Session đăng ký đã hết hạn" });
+      }
+
+      const temp = JSON.parse(dataStr);
+      if (!temp.otpVerified) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Vui lòng xác thực OTP trước" });
+      }
+
+      const extracted = await extractIdentityData({ identityCard, frontImageBase64, backImageBase64 });
+
+      if (extracted?.identityCard) {
+        const exists = await User.findOne({ identityCard: extracted.identityCard });
+        if (exists) {
+          return res
+            .status(409)
+            .json({ success: false, message: "CCCD đã được đăng ký" });
+        }
+      }
+
+      const updated = {
+        ...temp,
+        identityCard: extracted.identityCard || temp.identityCard,
+        ocrData: {
+          fullName: extracted.fullName,
+          dateOfBirth: extracted.dateOfBirth,
+          gender: extracted.gender,
+          address: extracted.address,
+        },
+      };
+
+      await redis.set(key, JSON.stringify(updated), "EX", 900);
+
+      return res.status(200).json({
+        success: true,
+        message: "Trích xuất thông tin CCCD thành công",
+        data: {
+          identityCard: updated.identityCard,
+          ...updated.ocrData,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
   // B1: gửi OTP
  sendOTP : async (req, res) => {
   try {
@@ -69,7 +133,7 @@ const UserController = {
     const e164 = normalizeVNPhone(phoneNumber);
     const code = generate4Digits();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
+    console.log(`Generated OTP for ${phoneNumber}: ${code} (expires at ${expiresAt.toISOString()})`);
     // Lưu vào Redis (TTL 5 phút)
     const key = `tempRegister:${phoneNumber}`;
     const tempData = { phoneNumber, role, code, expiresAt, otpVerified: false };
@@ -163,8 +227,8 @@ const UserController = {
  // B4: complete profile -> đọc session từ Redis, tạo user và xoá session
   completeProfile: async (req, res) => {
   try {
-    const { phoneNumber, fullName, dateOfBirth, gender, password } = req.body;
-    if (!phoneNumber || !fullName || !gender || !password) {
+    const { phoneNumber, password } = req.body;
+    if (!phoneNumber || !password) {
       return res
         .status(400)
         .json({ success: false, message: "Thiếu dữ liệu bắt buộc" });
@@ -207,13 +271,15 @@ const UserController = {
 
     const hashed = await bcrypt.hash(password, 12);
 
+    const ocr = temp.ocrData || {};
     const user = new User({
       phoneNumber,
       password: hashed,
       role: temp.role,
-      fullName,
-      gender,
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      fullName: ocr.fullName || "",
+      gender: ocr.gender || "other",
+      dateOfBirth: ocr.dateOfBirth ? new Date(ocr.dateOfBirth) : null,
+      address: ocr.address || null,
       identityCard: temp.identityCard,
       isActive: true,
       avatar: avatarDefault,
@@ -251,6 +317,58 @@ const UserController = {
     return res.status(500).json({ success: false, message: err.message });
   }
 },
+
+  // Cleanup Redis temp register session (optional helper)
+  cleanupTemp: async (req, res) => {
+    try {
+      const { phoneNumber } = req.body;
+      if (!phoneNumber) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Thiếu số điện thoại" });
+      }
+      const key = `tempRegister:${phoneNumber}`;
+      await redis.del(key);
+      return res.status(200).json({ success: true, message: "Đã xoá session tạm" });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+  
+  // Lấy dữ liệu đăng ký tạm (bao gồm ocrData) từ Redis theo phoneNumber
+  getTempRegister: async (req, res) => {
+    try {
+      const { phoneNumber } = req.query;
+      if (!phoneNumber) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Thiếu số điện thoại" });
+      }
+      const key = `tempRegister:${phoneNumber}`;
+      const dataStr = await redis.get(key);
+      if (!dataStr) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Không tìm thấy session tạm" });
+      }
+      const data = JSON.parse(dataStr);
+      return res.status(200).json({
+        success: true,
+        data: {
+          phoneNumber: data.phoneNumber,
+          role: data.role,
+          otpVerified: !!data.otpVerified,
+          identityCard: data.identityCard || null,
+          ocrData: data.ocrData || null,
+          expiresAt: data.expiresAt || null,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
     
   // Đăng nhập
   loginUser: async (req, res) => {

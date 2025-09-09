@@ -1,10 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import userService from "../../services/userService";
 
 function RegisterUserPage() {
   const [name, setName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [gender, setGender] = useState("");
+  const [address, setAddress] = useState("");
+  const [isPolling, setIsPolling] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -16,6 +21,36 @@ function RegisterUserPage() {
       console.error(error);
     }
   };
+
+  const handleStartPolling = () => {
+    if (!phoneNumber) {
+      setStatusMsg("Vui lòng nhập số điện thoại");
+      return;
+    }
+    setStatusMsg("Đang chờ ảnh từ điện thoại...");
+    setIsPolling(true);
+  };
+
+  useEffect(() => {
+    if (!isPolling || !phoneNumber) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await userService.getTempRegister({ phoneNumber });
+        if (res.success && res.data?.ocrData) {
+          const { ocrData } = res.data;
+          setName(ocrData.fullName || "");
+          setDateOfBirth(ocrData.dateOfBirth || "");
+          setGender(ocrData.gender || "");
+          setAddress(ocrData.address || "");
+          setIsPolling(false);
+          setStatusMsg("Đã tải thông tin từ điện thoại");
+        }
+      } catch (_) {
+        // ignore
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [isPolling, phoneNumber]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -48,6 +83,55 @@ function RegisterUserPage() {
               required
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
               placeholder="Nhập số điện thoại"
+            />
+            <button
+              type="button"
+              onClick={handleStartPolling}
+              className="mt-3 w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition"
+            >
+              Lấy dữ liệu từ điện thoại
+            </button>
+            {statusMsg && (
+              <p className="text-sm text-gray-500 mt-2">{statusMsg}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Ngày sinh
+            </label>
+            <input
+              type="text"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              readOnly
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="YYYY-MM-DD"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Giới tính
+            </label>
+            <input
+              type="text"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              readOnly
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="male/female/other"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Địa chỉ
+            </label>
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              readOnly
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Địa chỉ từ CCCD"
             />
           </div>
           <div>
