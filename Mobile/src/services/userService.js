@@ -289,8 +289,6 @@ verifyChangeEmailOTP: async ({ email, otp }) => {
     }
   },
   updateAvatar: async (file) => {
-  console.log('[userService.updateAvatar] file nhận được:', file);
-
   const formData = new FormData();
   formData.append("avatar", {
     uri: file.uri,
@@ -300,7 +298,6 @@ verifyChangeEmailOTP: async ({ email, otp }) => {
 
   try {
     const token = await userService.getToken();
-    console.log('[userService.updateAvatar] token:', token);
 
     const response = await api.post("/users/me/avatar", formData, {
       headers: {
@@ -308,8 +305,6 @@ verifyChangeEmailOTP: async ({ email, otp }) => {
         "Content-Type": "multipart/form-data",
       },
     });
-
-    console.log('[userService.updateAvatar] raw response:', response.data);
 
     return {
       success: true,

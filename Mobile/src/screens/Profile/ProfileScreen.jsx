@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'; // ✅ thêm để đồng bộ cache local
+import { pick } from '@react-native-documents/picker';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -19,9 +21,6 @@ import {
 import { launchCamera } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import userService from '../../services/userService';
-
-// 🔁 NEW: dùng package mới
-import { pick } from '@react-native-documents/picker'; // types có thể không cần; dùng 'image/*' an toàn
 
 const THEME = {
   primary: '#0046FF',
@@ -45,19 +44,20 @@ const ProfileScreen = ({ navigation }) => {
   const [error, setError] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
+  // dùng để bust cache ảnh & gửi về màn trước
+  const [avatarStamp, setAvatarStamp] = useState(0);
+
   const fetchUser = useCallback(async () => {
     try {
       setError('');
       setLoading(true);
       const res = await userService.getUserInfo();
-      console.log('[ProfileScreen] getUserInfo:', res);
       if (res?.success) setUser(res.data);
       else {
         setUser(null);
         setError(res?.message || 'Không lấy được dữ liệu người dùng.');
       }
     } catch (e) {
-      console.log(e);
       setError('Có lỗi khi tải thông tin. Vui lòng thử lại.');
       setUser(null);
     } finally {
@@ -82,9 +82,10 @@ const ProfileScreen = ({ navigation }) => {
     } catch { return ''; }
   };
 
-  const goBack = () => navigation.navigate('PersonalInfo');
-
-  // ---- Chuẩn hoá file đưa vào FormData ----
+  // QUAY LẠI: gửi kèm dấu mốc để màn trước biết cập nhật
+  const goBack = () => {
+  navigation.navigate('PersonalInfo', { avatarUpdatedAt: avatarStamp || Date.now() });
+};
   const toRNFile = (obj) => ({
     uri: obj?.fileCopyUri || obj?.uri,
     name:
@@ -94,15 +95,12 @@ const ProfileScreen = ({ navigation }) => {
     type: obj?.type || 'image/jpeg',
   });
 
-  // ---- Quyền ----
   const requestCameraPermissionIfNeeded = async () => {
     if (Platform.OS !== 'android') return true;
     const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA);
     return granted === PermissionsAndroid.RESULTS.GRANTED;
   };
 
-  // Android ≤ 12 đôi khi vẫn cần quyền đọc; Android 13+ thường không cần (Photo Picker),
-  // nhưng để chắc chắn vẫn xin khi device/ROM fallback.
   const requestStorageIfNeeded = async () => {
     if (Platform.OS !== 'android') return true;
     const r33 = await PermissionsAndroid.request(
@@ -117,8 +115,6 @@ const ProfileScreen = ({ navigation }) => {
     return r32 === PermissionsAndroid.RESULTS.GRANTED || r32 === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN;
   };
 
-  // ---- Pickers ----
-  // ✅ MỞ KHO LƯU TRỮ/FILES (ổn trên cả emulator & device)
   const handlePickFromLibrary = async () => {
     try {
       const ok = await requestStorageIfNeeded();
@@ -126,28 +122,20 @@ const ProfileScreen = ({ navigation }) => {
         Alert.alert('Cần quyền', 'Vui lòng cấp quyền truy cập ảnh/tệp để chọn từ thư viện.');
         return;
       }
-
-      // API của @react-native-documents/picker
       const result = await pick({
-        type: ['image/*'],          // lọc chỉ ảnh; dùng chuỗi MIME cho tương thích rộng
+        type: ['image/*'],
         allowMultiSelection: false,
-        mode: 'import',             // copy file về sandbox (có uri ổn định)
+        mode: 'import',
         presentationStyle: 'fullScreen',
       });
-
-      // API trả về mảng file
       const file0 = Array.isArray(result) ? result[0] : result;
       if (!file0?.uri) {
         Alert.alert('Lỗi', 'Không lấy được ảnh từ thư viện.');
         return;
       }
-
-      const file = toRNFile(file0);
-      await uploadAvatar(file);
+      await uploadAvatar(toRNFile(file0));
     } catch (e) {
-      // Người dùng bấm Cancel sẽ ném code 'OPERATION_CANCELED'
       if (e?.code === 'OPERATION_CANCELED') return;
-      console.log('[@rndocuments/picker] error:', e);
       Alert.alert('Lỗi', e?.message || 'Không chọn được ảnh.');
     }
   };
@@ -159,8 +147,6 @@ const ProfileScreen = ({ navigation }) => {
       return;
     }
     const res = await launchCamera({ mediaType: 'photo', quality: 0.9, saveToPhotos: true });
-    console.log('[launchCamera] res:', res);
-
     if (res.didCancel) return;
     if (res.errorMessage || res.errorCode) {
       Alert.alert('Lỗi', res.errorMessage || res.errorCode);
@@ -189,42 +175,27 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  // ---- Upload ----
   const uploadAvatar = async (file) => {
   try {
     setUploadingAvatar(true);
 
-    console.log('[uploadAvatar] file chuẩn bị gửi:', file);
-
     const res = await userService.updateAvatar(file);
 
-    console.log('[uploadAvatar] response từ server:', res);
-
-    if (!res?.success) {
-      throw new Error(res?.message || 'Cập nhật avatar thất bại');
-    }
+    if (!res?.success) throw new Error(res?.message || 'Cập nhật avatar thất bại');
 
     const newUrl = res?.data?.avatar;
+    const ts = Date.now();
+    setAvatarStamp(ts);
+
     if (newUrl) {
       setUser((prev) => (prev ? { ...prev, avatar: newUrl } : prev));
+      await AsyncStorage.setItem('ecare_user', JSON.stringify({ ...(user || {}), avatar: newUrl }));
     } else {
       await fetchUser();
     }
-
     Alert.alert('Thành công', 'Đã cập nhật ảnh đại diện.');
   } catch (err) {
-    // 👉 log chi tiết lỗi ở client
-    console.log('[uploadAvatar] error full:', err);
-
-    // Nếu lỗi từ axios (userService.updateAvatar)
-    if (err.response) {
-      console.log('[uploadAvatar] axios error response:', {
-        status: err.response.status,
-        data: err.response.data,
-        headers: err.response.headers,
-      });
-    }
-
+    console.log('[uploadAvatar] ERROR:', err);
     Alert.alert('Lỗi', err.message || 'Không thể cập nhật ảnh đại diện.');
   } finally {
     setUploadingAvatar(false);
@@ -243,7 +214,6 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  // ------ UI ------
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -276,6 +246,13 @@ const ProfileScreen = ({ navigation }) => {
     );
   }
 
+  // helper: thêm cache-buster vào url hiển thị tại màn này
+  const avatarUri = (() => {
+    const raw = user?.avatar || AVATAR_FALLBACK;
+    const sep = raw.includes('?') ? '&' : '?';
+    return avatarStamp ? `${raw}${sep}v=${avatarStamp}` : raw;
+  })();
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={THEME.white} />
@@ -300,15 +277,13 @@ const ProfileScreen = ({ navigation }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={[styles.card, styles.center]}>
-          
           <View style={styles.avatarWrapper}>
-            <Image source={{ uri: user.avatar || AVATAR_FALLBACK }} style={styles.profileImage} />
+            {/* ✅ key để remount Image khi uri đổi → tránh cache cứng */}
+            <Image key={String(avatarUri)} source={{ uri: avatarUri }} style={styles.profileImage} />
             {uploadingAvatar && (
               <View style={styles.avatarOverlay}>
                 <ActivityIndicator size="small" color="#fff" />
-                
               </View>
-              
             )}
             <TouchableOpacity
               style={styles.editAvatarButton}
@@ -358,7 +333,7 @@ const SectionHeader = ({ title }) => (
 const InfoRow = ({ icon, label, value, actionText, onPress, isLast = false }) => (
   <View style={[styles.infoRow, isLast ? {} : styles.rowDivider]}>
     <View style={styles.infoLeft}>
-      <View className="iconWrap"><Icon name={icon} size={18} color={THEME.primary} /></View>
+      <View style={styles.iconWrap}><Icon name={icon} size={18} color={THEME.primary} /></View>
       <View style={{ flex: 1 }}>
         <Text style={styles.fieldLabel}>{label}</Text>
         <Text style={styles.fieldValue}>{value || '—'}</Text>
@@ -385,28 +360,14 @@ const styles = StyleSheet.create({
     ...Platform.select({ android: { elevation: 1.5 }, ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4 } }),
   },
   center: { alignItems: 'center' },
-  avatarWrapper: { 
-    position: 'relative', 
-    width: 100, 
-    height: 100, 
-    borderRadius: 50, 
-    borderWidth: 3, // Thêm viền xám nhạt
-    borderColor: '#D3D3D3', // Màu xám nhạt
-    overflow: 'hidden', // Đảm bảo hình ảnh không bị tràn ra ngoài viền
-    padding: 5,
+  avatarWrapper: {
+    position: 'relative', width: 100, height: 100, borderRadius: 50,
+    borderWidth: 3, borderColor: '#D3D3D3', overflow: 'hidden', padding: 5,
   },
   profileImage: { width: '100%', height: '100%', borderRadius: 50, backgroundColor: '#f5f5f5' },
   editAvatarButton: {
-    position: 'absolute', 
-    bottom: 6,  // Điều chỉnh vị trí dưới viền
-    right: 9, // Điều chỉnh vị trí phải viền
-    backgroundColor: '#007AFF', 
-    borderRadius: 16, 
-    padding: 6,
-    borderWidth: 2, 
-    borderColor: '#fff', 
-    elevation: 5, // Tăng độ nổi
-    zIndex: 20, // Đảm bảo ở trên cùng
+    position: 'absolute', bottom: 6, right: 9, backgroundColor: '#007AFF',
+    borderRadius: 16, padding: 6, borderWidth: 2, borderColor: '#fff', elevation: 5, zIndex: 20,
   },
   avatarOverlay: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', borderRadius: 50 },
   name: { marginTop: 12, fontSize: 20, fontWeight: '700', color: THEME.text, textAlign: 'center' },
@@ -416,8 +377,8 @@ const styles = StyleSheet.create({
   rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: THEME.border },
   infoLeft: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   iconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  fieldLabel: { fontSize: 12, color: THEME.subtext, marginBottom: 2, marginLeft: 6 },
-  fieldValue: { fontSize: 15, color: THEME.text, fontWeight: '500', marginLeft: 6 },
+  fieldLabel: { fontSize: 12, color: THEME.subtext, marginBottom: 2 },
+  fieldValue: { fontSize: 15, color: THEME.text, fontWeight: '500' },
   inlineEditBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: THEME.primary, backgroundColor: '#F5F8FF' },
   inlineEditText: { color: THEME.primary, fontSize: 13, fontWeight: '600' },
   button: {
