@@ -10,7 +10,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { userService } from '../../services/userService';
 import InputPhonenumber from '../../components/inputPhonenumber';
 
-const ForgotPasswordScreen = ({ navigation }) => {
+const ChangePhonenumberScreen = ({ navigation }) => {
   const [phone, setPhone] = React.useState('');
   const [error, setError] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -26,23 +26,26 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      const result = await userService.sendForgotPasswordOTP({
-        phoneNumber: trimmed,
-      });
+      const result = await userService.sendChangePhoneOTP({ phoneNumber: trimmed });
 
       if (result?.success) {
-        Alert.alert('Thành công', result.message, [
+        Alert.alert('Thành công', result.message || 'Đã gửi OTP', [
           {
             text: 'OK',
             onPress: () =>
-              navigation.navigate('VerifySMS', {
+              navigation.navigate('OTPChangePhone', {
                 phoneNumber: trimmed,
-                isResetPassword: true,
+                isChangePhonenumber: true,
               }),
           },
         ]);
       } else {
-        Alert.alert('Lỗi', result?.message || 'Không thể gửi mã OTP');
+        // Nếu backend trả về thông báo số điện thoại đã tồn tại
+        if (result?.message?.includes('đã được đăng ký')) {
+          Alert.alert('Lỗi', 'Số điện thoại này đã được đăng ký. Vui lòng nhập số khác.');
+        } else {
+          Alert.alert('Lỗi', result?.message || 'Không thể gửi mã OTP');
+        }
       }
     } catch (e) {
       console.error('Send OTP error:', e);
@@ -65,21 +68,19 @@ const ForgotPasswordScreen = ({ navigation }) => {
       {/* Content */}
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Quên mật khẩu</Text>
+          <Text style={styles.title}>Đổi số điện thoại</Text>
           <Text style={styles.description}>
-            Vui lòng nhập số điện thoại của bạn. Một mã xác minh gồm 4 chữ số sẽ được gửi đến SMS của bạn, sau đó
-            bạn có thể tạo mật khẩu mới.
+            Nhập số điện thoại mới của bạn. Chúng tôi sẽ gửi mã xác minh gồm 4 chữ số
+            đến SMS để xác nhận thay đổi.
           </Text>
         </View>
 
-        {/* Input component */}
         <InputPhonenumber
           value={phone}
           onChangeText={setPhone}
           error={error}
         />
 
-        {/* Button gửi OTP */}
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleSendOTP}
@@ -94,7 +95,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
   );
 };
 
-export default ForgotPasswordScreen;
+export default ChangePhonenumberScreen;
 
 const styles = StyleSheet.create({
   root: {

@@ -1,8 +1,8 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import userService from "../userService";
 
-export const BASE_URL = "http://192.168.1.12:3000/api";
-
+export const BASE_URL = "http://10.12.32.211:3000/api";
 // ===== Token storage (in-memory + AsyncStorage) =====
 const TOKEN_KEY = "ecare_token";
 let inMemoryToken = null;
@@ -14,22 +14,7 @@ export async function getAPIToken() {
   return t;
 }
 
-export async function setAPIToken(token) {
-  inMemoryToken = token || null;
-  if (token) await AsyncStorage.setItem(TOKEN_KEY, token);
-  else await AsyncStorage.removeItem(TOKEN_KEY);
-}
-
-// (tuỳ chọn) Lưu/đọc user để reuse ở UI
-const USER_KEY = "ecare_user";
-export async function setSavedUser(user) {
-  if (user) await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
-  else await AsyncStorage.removeItem(USER_KEY);
-}
-export async function getSavedUser() {
-  const u = await AsyncStorage.getItem(USER_KEY);
-  return u ? JSON.parse(u) : null;
-}
+// Tạo instance axios
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -40,7 +25,7 @@ const api = axios.create({
 // Gắn Authorization mỗi request
 api.interceptors.request.use(
   async (config) => {
-    const token = await getAPIToken();
+    const token = await userService.getToken();
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },

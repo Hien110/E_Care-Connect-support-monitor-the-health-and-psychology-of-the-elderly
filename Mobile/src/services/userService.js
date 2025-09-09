@@ -44,12 +44,18 @@ export const userService = {
 
   // --- USER ---
   getUser: async () => {
-    if (memoryUser) return memoryUser;
+    if (memoryUser) return {
+      success: true,
+      data: memoryUser,
+    };
 
     if (RNStorage) {
       const userStr = await RNStorage.getItem('ecare_user');
       memoryUser = userStr ? JSON.parse(userStr) : null;
-      return memoryUser;
+      return {
+        success: true,
+        data: memoryUser,
+      };
     }
 
     return null;
@@ -122,9 +128,10 @@ export const userService = {
   },
 
   // B4: Hoàn tất hồ sơ
-  completeProfile: async ({ fullName, dateOfBirth, gender, password }) => {
+  completeProfile: async ({ phoneNumber, fullName, dateOfBirth, gender, password }) => {
     try {
       const response = await api.put('/users/complete-profile', {
+        phoneNumber,
         fullName,
         dateOfBirth,
         gender,
@@ -145,22 +152,23 @@ export const userService = {
   },
   // Đăng nhập
   loginUser: async ({ phoneNumber, password }) => {
-    try {
-      const res = await api.post('/users/loginUser', { phoneNumber, password });
-      const token = res.data?.token || res.data?.data?.token;
-      const user = res.data?.user || res.data?.data?.user;
+  try {
+    const cleanPhone = (phoneNumber ?? '').replace(/\s+/g, ''); 
 
-      return {
-        success: true,
-        token,
-        user,
-        message: res.data?.message || 'Đăng nhập thành công',
-      };
-    } catch (error) {
-      const msg = error?.response?.data?.message || 'Đăng nhập thất bại';
-      return { success: false, token: null, user: null, message: msg };
-    }
-  },
+    const res = await api.post('/users/loginUser', {
+      phoneNumber: cleanPhone,
+      password,
+    });
+
+    const token = res.data?.token || res.data?.data?.token;
+    const user  = res.data?.user  || res.data?.data?.user;
+
+    return { success: true, token, user, message: res.data?.message || 'Đăng nhập thành công' };
+  } catch (error) {
+    const msg = error?.response?.data?.message || 'Đăng nhập thất bại';
+    return { success: false, token: null, user: null, message: msg };
+  }
+},
 
   // Lấy thông tin user
   getUserInfo: async () => {
@@ -182,18 +190,21 @@ export const userService = {
     await userService.setUser(null);
   },
 
-
   //Thay đổi mật khẩu
   changePassword: async ({ oldPassword, newPassword }) => {
     try {
-      const response = await api.put('/users/change-password', {
-        oldPassword,
-        newPassword,
-      }, {
-        headers: {
-          Authorization: `Bearer ${await userService.getToken()}`,
+      const response = await api.put(
+        '/users/change-password',
+        {
+          oldPassword,
+          newPassword,
         },
-      });
+        {
+          headers: {
+            Authorization: `Bearer ${await userService.getToken()}`,
+          },
+        },
+      );
       return {
         success: true,
         message: response.data.message,
@@ -205,6 +216,113 @@ export const userService = {
       };
     }
   },
-};
 
+  sendChangePhoneOTP: async ({ phoneNumber }) => {
+  try {
+    const response = await api.post('/users/change-phone/send-otp', { phoneNumber });
+    return {
+      success: true,
+      data: response.data?.data,
+      message: response.data?.message,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || error.message,
+    };
+  }
+},
+
+  verifyChangePhoneOTP: async ({ phoneNumber, otp }) => {
+    try {
+      const response = await api.post('users/change-phone/verify', {
+        phoneNumber,
+        otp,
+      });
+      return {
+        success: true,
+        data: response.data?.data,
+        message: response.data?.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.message || error.message,
+      };
+    }
+  },
+  sendChangeEmailOTP: async ({ email }) => {
+  try {
+    const res = await api.post('/users/change-email/send-otp', { email });
+    return { success: true, data: res.data?.data, message: res.data?.message };
+  } catch (error) {
+    return { success: false, message: error?.response?.data?.message || error.message };
+  }
+},
+verifyChangeEmailOTP: async ({ email, otp }) => {
+  try {
+    const res = await api.post('/users/change-email/verify', { email, otp });
+    return { success: true, data: res.data?.data, message: res.data?.message };
+  } catch (error) {
+    return { success: false, message: error?.response?.data?.message || error.message };
+  }
+},
+
+  // Lấy danh sách người già
+  getAllElderly: async () => {
+    try {
+      const response = await api.get('/users/get-elderly', {
+        headers: {
+          Authorization: `Bearer ${await userService.getToken()}`,
+        },
+      });
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data.message || error.message,
+      };
+    }
+  },
+  updateAvatar: async (file) => {
+  const formData = new FormData();
+  formData.append("avatar", {
+    uri: file.uri,
+    type: file.type,
+    name: file.name,
+  });
+
+  try {
+    const token = await userService.getToken();
+
+    const response = await api.post("/users/me/avatar", formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return {
+      success: true,
+      data: response.data?.data,
+      message: response.data?.message || "Cập nhật avatar thành công",
+    };
+  } catch (error) {
+    console.log('[userService.updateAvatar] axios error:', {
+      status: error?.response?.status,
+      data: error?.response?.data,
+      message: error.message,
+    });
+    return {
+      success: false,
+      message: error?.response?.data?.message || error.message,
+    };
+  }
+},
+
+}
 export default userService;

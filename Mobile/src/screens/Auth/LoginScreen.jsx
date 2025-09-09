@@ -32,17 +32,43 @@ export default function LoginScreen() {
   const fadeIn = useRef(new Animated.Value(0)).current;
   const floatY = useRef(new Animated.Value(0)).current;
 
-  // 👉 Nếu đã có token thì vào thẳng Home
+  const ROLE_TO_ROUTE = {
+    elderly: "ElderHome",
+    family: "FamilyMemberHome",
+    supporter: "SupporterHome",
+  };
   useEffect(() => {
-    (async () => {
-      try {
-        const t = await AsyncStorage.getItem("ecare_token");
-        if (t) {
-          nav.reset({ index: 0, routes: [{ name: "Home" }] });
+  let mounted = true;
+
+  (async () => {
+    try {
+      const token = await userService.getToken();
+      if (!token) return; 
+
+      let user = await userService.getUser();
+      if (!user) {
+        const res = await userService.getUserInfo();
+        if (res?.success) {
+          user = res.data?.user || res.data;
+          await userService.setUser(user);
+        } else {
+          await userService.logout?.();
+          return;
         }
-      } catch (_) {}
-    })();
-  }, [nav]);
+      }
+
+      if (!mounted) return;
+
+      const routeName = ROLE_TO_ROUTE[user?.role] || FALLBACK_ROUTE;
+      nav.reset({ index: 0, routes: [{ name: routeName }] });
+    } catch (e) {
+      await userService.logout?.();
+    }
+  })();
+
+  return () => { mounted = false; };
+}, [nav]);
+
 
   // Animation
   useEffect(() => {
@@ -65,6 +91,7 @@ export default function LoginScreen() {
     ).start();
   }, [fadeIn, floatY]);
 
+
   const handleLogin = async () => {
     setError("");
     setSuccess("");
@@ -77,23 +104,31 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       const res = await userService.loginUser({ phoneNumber, password });
+
       if (!res.success) {
         setError(res.message || "Đăng nhập thất bại");
         return;
       }
 
-      // Lưu vĩnh viễn token & user
+      // Lưu token & user
       if (res.token) await userService.setToken(res.token);
       if (res.user) await userService.setUser(res.user);
 
       setSuccess("Đăng nhập thành công");
-      nav.reset({ index: 0, routes: [{ name: "Home" }] });
+
+      const routeName = ROLE_TO_ROUTE[res.user?.role] || "DefaultScreen";
+
+      nav.reset({
+        index: 0,
+        routes: [{ name: routeName }],
+      });
     } catch (e) {
       setError("Có lỗi xảy ra. Thử lại sau.");
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <SafeAreaView style={styles.container}>
