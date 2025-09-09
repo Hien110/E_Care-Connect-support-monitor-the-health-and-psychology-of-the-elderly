@@ -29,9 +29,15 @@ router.post("/cleanup-temp", UserController.cleanupTemp);
 // get temp register data (for web polling)
 router.get("/temp-register", UserController.getTempRegister);
 
+router.post('/change-phone/send-otp', authenticateToken, UserController.changePhoneSendOTP);
+router.post('/change-phone/verify', authenticateToken, UserController.changePhoneVerify);
+router.post("/change-email/send-otp", authenticateToken, UserController.changeEmailSendOTP);
+router.post("/change-email/verify", authenticateToken, UserController.changeEmailVerify);
 router.use(authenticateToken);
 router.get("/getUserInfo", UserController.getUserInfo);
 // Thay đổi mật khẩu
 router.put("/change-password", UserController.changePassword);
+// Lấy danh sách người già
+router.get("/get-elderly", UserController.getAllElderly);
 
 module.exports = router;

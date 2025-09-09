@@ -2,7 +2,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 
-import ElderScreen from '../screens/Site/ElderScreen.jsx';
+import ElderHomeScreen from '../screens/Site/ElderHomeScreen';
 import RegistersScreen from '../screens/Auth/RegistersScreen';
 import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
@@ -12,9 +12,18 @@ import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen.jsx';
 import SuccessScreen from '../screens/Site/SuccessScreen';
 import PersonalInfoScreen from '../screens/Profile/PersonalInfoScreen.jsx';
-import FamilyMemberScreen from '../screens/Site/FamilyScreen.jsx';
-import SupporterScreen from '../screens/Site/SupporterScreen.jsx';
-import DefaultScreen from '../screens/Error/DefaultScreen.jsx';
+import FamilyMemberHomeScreen from '../screens/Site/FamilyHomeScreen.jsx';
+import SupporterHomeScreen from '../screens/Site/SupporterHomeScreen';
+import DefaultScreen from '../screens/Error/DefaultScreen';
+import ChangePhonenumberScreen from '../screens/Auth/ChangePhonenumberScreen.jsx';
+import OtPChangePhoneScreen from '../screens/Auth/OTPChangePhoneScreen.jsx';
+import ChangeEmailScreen from '../screens/Auth/ChangeEmailScreen.jsx';
+import OTPChangeEmailScreen from '../screens/Auth/OTPChangeEmailScreen.jsx';
+import FindPeopleScreen from '../screens/Connect-family/FindPeopleScreen';
+import FamilyConnectionScreen from '../screens/Connect-family/FamilyConnectionScreen';
+import FamilyConnectionListScreen from '../screens/Connect-family/FamilyConnectionListScreen';
+import FamilyList_FamilyScreen from '../screens/Connect-family/FamilyList_FamilyScreen';
+
 // HOC footer
 import withFooter from '../components/withFooter';
 
@@ -57,18 +66,39 @@ const AppNavigator = () => {
         />
 
         <Stack.Screen
-          name="FamilyMember"
-          component={withFooter(FamilyMemberScreen, 'home')}
+          name="FamilyMemberHome"
+          component={withFooter(FamilyMemberHomeScreen, 'home')}
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="Supporter"
-          component={withFooter(SupporterScreen, 'home')}
+          name="SupporterHome"
+          component={withFooter(SupporterHomeScreen, 'home')}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="DefaultScreen"
           component={DefaultScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ChangePhonenumber"
+          component={ChangePhonenumberScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="OTPChangePhone"
+          component={OtPChangePhoneScreen}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="ChangeEmail"
+          component={ChangeEmailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="OTPChangeEmail"
+          component={OTPChangeEmailScreen}
           options={{ headerShown: false }}
         />
 
@@ -79,8 +109,8 @@ const AppNavigator = () => {
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="Elder"
-          component={withFooter(ElderScreen, 'home')}
+          name="ElderHome"
+          component={withFooter(ElderHomeScreen, 'home')}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -91,6 +121,26 @@ const AppNavigator = () => {
         <Stack.Screen
           name="PersonalInfo"
           component={PersonalInfoScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FindPeople"
+          component={FindPeopleScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FamilyConnection"
+          component={FamilyConnectionScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FamilyConnectionList"
+          component={FamilyConnectionListScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FamilyList_Family"
+          component={FamilyList_FamilyScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

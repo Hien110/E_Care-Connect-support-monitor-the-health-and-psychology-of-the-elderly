@@ -68,7 +68,7 @@ const SuccessScreen = () => {
           paddingHorizontal: 50,
           borderRadius: 30,
         }}
-        onPress={() => navigation.navigate(navigate || "Home")} // hoặc UpdateInfo
+        onPress={() => navigation.navigate(navigate || "ElderHome")} // hoặc UpdateInfo
       >
         <Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold" }}>
           Xong
