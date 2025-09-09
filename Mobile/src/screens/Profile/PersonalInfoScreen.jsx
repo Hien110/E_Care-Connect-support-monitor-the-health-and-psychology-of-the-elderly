@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useRoute } from '@react-navigation/native'; // ✅
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -28,13 +28,18 @@ const LIGHT = '#EAF2FF';
 const AVATAR_FALLBACK =
   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-mAf0Q5orw3lJzIC2j6NFU6Ik2VNcgB.png';
 
+// 🔑 timestamp lưu khi ProfileScreen upload xong (để kể cả Fast Refresh vẫn nhớ)
+const AVATAR_STAMP_KEY = 'ecare_avatar_updated_at';
+
 const HEADER_H = 172;
 const AVATAR = 90;
 
 const PersonalInfoScreen = ({ navigation }) => {
   const nav = navigation;
-  const route = useRoute(); // ✅ nhận param từ ProfileScreen
+  const route = useRoute(); // nhận param từ ProfileScreen
+
   const [user, setUser] = useState(null);
+  const [avatarStamp, setAvatarStamp] = useState(0); // giữ dấu mốc từ AsyncStorage
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -49,27 +54,37 @@ const PersonalInfoScreen = ({ navigation }) => {
     }
   }, []);
 
+  const readLocalStamp = useCallback(async () => {
+    try {
+      const raw = await AsyncStorage.getItem(AVATAR_STAMP_KEY);
+      return raw ? Number(raw) : 0;
+    } catch {
+      return 0;
+    }
+  }, []);
+
   // ===== API =====
   const fetchUser = useCallback(async () => {
     try {
       setError('');
       setLoading(true);
+
       const res = await userService.getUser?.();
       if (res?.success) {
         let nextUser = res.data || null;
 
-        // ✅ Nếu vừa cập nhật avatar (ProfileScreen gửi avatarUpdatedAt),
-        // ưu tiên avatar từ local để tránh server/cdn trả về url cũ
-        const avatarUpdatedAt = route?.params?.avatarUpdatedAt || 0;
-        if (avatarUpdatedAt) {
-          const localUser = await readLocalUser();
-          if (localUser?.avatar) {
-            nextUser = { ...(nextUser || {}), avatar: localUser.avatar };
-          }
+        // Nếu vừa cập nhật avatar (có stamp từ route hoặc AsyncStorage) → ưu tiên avatar local
+        const routeStamp = route?.params?.avatarUpdatedAt || 0;
+        const localUser = await readLocalUser();
+        const localStamp = await readLocalStamp();
+        const effectiveStamp = routeStamp || localStamp;
+
+        if (effectiveStamp && localUser?.avatar) {
+          nextUser = { ...(nextUser || {}), avatar: localUser.avatar };
         }
 
         setUser(nextUser);
-        // Đồng bộ vào AsyncStorage cho các màn khác
+        // đồng bộ lại local (giữ avatar đã merge)
         try { await AsyncStorage.setItem('ecare_user', JSON.stringify(nextUser)); } catch {}
       } else {
         setUser(null);
@@ -81,20 +96,21 @@ const PersonalInfoScreen = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
-  }, [readLocalUser, route?.params?.avatarUpdatedAt]);
+  }, [readLocalUser, readLocalStamp, route?.params?.avatarUpdatedAt]);
 
   // Lần đầu mở màn
   useEffect(() => { fetchUser(); }, [fetchUser]);
 
-  // ✅ Khi focus: đọc local trước (hiển thị ngay), rồi gọi API để đồng bộ
+  // Khi focus: đọc local trước (hiển thị ngay), rồi gọi API để đồng bộ
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        const local = await readLocalUser();
+        const [local, stamp] = await Promise.all([readLocalUser(), readLocalStamp()]);
         if (local) setUser(local);
+        if (stamp) setAvatarStamp(stamp);
         await fetchUser();
       })();
-    }, [fetchUser, readLocalUser])
+    }, [fetchUser, readLocalUser, readLocalStamp])
   );
 
   // Pull-to-refresh
@@ -108,7 +124,7 @@ const PersonalInfoScreen = ({ navigation }) => {
   const onLogout = useCallback(async () => {
     try {
       await userService.logout?.();
-      await AsyncStorage.multiRemove(['ecare_token', 'ecare_user']);
+      await AsyncStorage.multiRemove(['ecare_token', 'ecare_user', AVATAR_STAMP_KEY]);
     } finally {
       nav.reset({ index: 0, routes: [{ name: 'Login' }] });
     }
@@ -116,14 +132,16 @@ const PersonalInfoScreen = ({ navigation }) => {
 
   const goBack = () => navigation?.goBack?.();
 
-  // ✅ chống cache ảnh bằng stamp gửi từ ProfileScreen
-  const avatarUpdatedAt = route?.params?.avatarUpdatedAt || 0;
+  // ✅ chống cache ảnh bằng stamp (ưu tiên route param, fallback AsyncStorage)
+  const routeStamp = route?.params?.avatarUpdatedAt || 0;
+  const effectiveStamp = routeStamp || avatarStamp;
+
   const avatarUri = useMemo(() => {
     const raw = (user?.avatar && String(user.avatar)) || AVATAR_FALLBACK;
-    if (!avatarUpdatedAt) return raw;
+    if (!effectiveStamp) return raw;
     const sep = raw.includes('?') ? '&' : '?';
-    return `${raw}${sep}v=${avatarUpdatedAt}`;
-  }, [user?.avatar, avatarUpdatedAt]);
+    return `${raw}${sep}v=${effectiveStamp}`;
+  }, [user?.avatar, effectiveStamp]);
 
   const MenuItem = ({ bg, icon, iconLib = 'ion', color, title, value, onPress }) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
@@ -159,9 +177,6 @@ const PersonalInfoScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.headerRow}>
-            <TouchableOpacity style={styles.backBtn} onPress={goBack}>
-              <Icon name="arrow-back" size={22} color={WHITE} />
-            </TouchableOpacity>
             <Text style={styles.headerTitle}>{user?.fullName || ''}</Text>
             <View style={{ width: 40 }} />
           </View>
@@ -278,7 +293,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', color: WHITE, fontSize: 22, fontWeight: '700', marginRight: 10, zIndex: 10 },
+  headerTitle: { flex: 1, textAlign: 'center', color: WHITE, fontSize: 22, fontWeight: '700', marginLeft: 20 , zIndex: 10 },
 
   avatarWrap: {
     position: 'absolute',

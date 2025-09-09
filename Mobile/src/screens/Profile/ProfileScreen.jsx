@@ -37,6 +37,8 @@ const THEME = {
 const AVATAR_FALLBACK =
   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-mAf0Q5orw3lJzIC2j6NFU6Ik2VNcgB.png';
 
+const AVATAR_STAMP_KEY = 'ecare_avatar_updated_at';
+
 const ProfileScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -95,12 +97,6 @@ const ProfileScreen = ({ navigation }) => {
     type: obj?.type || 'image/jpeg',
   });
 
-  const requestCameraPermissionIfNeeded = async () => {
-    if (Platform.OS !== 'android') return true;
-    const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA);
-    return granted === PermissionsAndroid.RESULTS.GRANTED;
-  };
-
   const requestStorageIfNeeded = async () => {
     if (Platform.OS !== 'android') return true;
     const r33 = await PermissionsAndroid.request(
@@ -140,35 +136,14 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const handleTakePhoto = async () => {
-    const allowed = await requestCameraPermissionIfNeeded();
-    if (!allowed) {
-      Alert.alert('Quyền bị từ chối', 'Không thể mở camera.');
-      return;
-    }
-    const res = await launchCamera({ mediaType: 'photo', quality: 0.9, saveToPhotos: true });
-    if (res.didCancel) return;
-    if (res.errorMessage || res.errorCode) {
-      Alert.alert('Lỗi', res.errorMessage || res.errorCode);
-      return;
-    }
-    const asset = res.assets?.[0];
-    if (!asset?.uri) {
-      Alert.alert('Lỗi', 'Không lấy được ảnh.');
-      return;
-    }
-    await uploadAvatar(toRNFile(asset));
-  };
-
   const showPickSheet = () => {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
-        { options: ['Huỷ', 'Chụp ảnh', 'Chọn từ thư viện'], cancelButtonIndex: 0 },
-        (idx) => { if (idx === 1) handleTakePhoto(); if (idx === 2) handlePickFromLibrary(); }
+        { options: ['Huỷ', 'Chọn từ thư viện'], cancelButtonIndex: 0 },
+        (idx) => { if (idx === 1) handlePickFromLibrary(); }
       );
     } else {
       Alert.alert('Cập nhật ảnh đại diện', 'Chọn nguồn ảnh', [
-        { text: 'Chụp ảnh', onPress: handleTakePhoto },
         { text: 'Thư viện', onPress: handlePickFromLibrary },
         { text: 'Huỷ', style: 'cancel' },
       ]);
@@ -178,25 +153,26 @@ const ProfileScreen = ({ navigation }) => {
   const uploadAvatar = async (file) => {
   try {
     setUploadingAvatar(true);
-
     const res = await userService.updateAvatar(file);
-
     if (!res?.success) throw new Error(res?.message || 'Cập nhật avatar thất bại');
 
     const newUrl = res?.data?.avatar;
     const ts = Date.now();
-    setAvatarStamp(ts);
 
-    if (newUrl) {
-      setUser((prev) => (prev ? { ...prev, avatar: newUrl } : prev));
-      await AsyncStorage.setItem('ecare_user', JSON.stringify({ ...(user || {}), avatar: newUrl }));
-    } else {
-      await fetchUser();
-    }
+    // cập nhật local state
+    setUser((prev) => prev ? { ...prev, avatar: newUrl } : prev);
+
+    // cập nhật AsyncStorage để các màn khác & HMR đọc được ngay
+    const nextUser = { ...(user || {}), avatar: newUrl };
+    await AsyncStorage.setItem('ecare_user', JSON.stringify(nextUser));
+    await AsyncStorage.setItem(AVATAR_STAMP_KEY, String(ts));
+
+    // quay về gửi kèm param (nếu đang dùng)
+    navigation.navigate('PersonalInfo', { avatarUpdatedAt: ts });
+
     Alert.alert('Thành công', 'Đã cập nhật ảnh đại diện.');
-  } catch (err) {
-    console.log('[uploadAvatar] ERROR:', err);
-    Alert.alert('Lỗi', err.message || 'Không thể cập nhật ảnh đại diện.');
+  } catch (e) {
+    Alert.alert('Lỗi', e.message || 'Không thể cập nhật ảnh đại diện.');
   } finally {
     setUploadingAvatar(false);
   }
@@ -369,7 +345,18 @@ const styles = StyleSheet.create({
     position: 'absolute', bottom: 6, right: 9, backgroundColor: '#007AFF',
     borderRadius: 16, padding: 6, borderWidth: 2, borderColor: '#fff', elevation: 5, zIndex: 20,
   },
-  avatarOverlay: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', borderRadius: 50 },
+  avatarOverlay: {
+  position: 'absolute',
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+  backgroundColor: 'rgba(0,0,0,0.35)',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 50,      
+  zIndex: 15,            
+},
   name: { marginTop: 12, fontSize: 20, fontWeight: '700', color: THEME.text, textAlign: 'center' },
   sectionHeader: { marginBottom: 6 },
   sectionTitle: { fontSize: 14, fontWeight: '700', color: THEME.text },
