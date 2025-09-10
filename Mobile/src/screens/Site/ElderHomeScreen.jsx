@@ -14,6 +14,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import userService from "../../services/userService";
+import socketService from "../../services/socketService";
 
 /* ===================== HOME ===================== */
 export default function HomeScreen() {
@@ -103,6 +104,8 @@ export default function HomeScreen() {
   // logout
   const onLogout = useCallback(async () => {
     try {
+      // Disconnect socket trước
+      socketService.disconnect();
       await userService.logout?.();
       await AsyncStorage.multiRemove(["ecare_token", "ecare_user"]);
     } finally {

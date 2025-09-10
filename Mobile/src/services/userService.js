@@ -186,6 +186,14 @@ export const userService = {
   },
 
   logout: async () => {
+    // Disconnect socket trước khi xóa token
+    try {
+      const socketService = require('./socketService').default;
+      socketService.disconnect();
+    } catch (error) {
+      console.log('Socket disconnect warning:', error.message);
+    }
+    
     await userService.setToken(null);
     await userService.setUser(null);
   },

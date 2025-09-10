@@ -264,12 +264,16 @@ const ChatScreen = () => {
     };
   }, [currentUser]);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages loaded or changed
   useEffect(() => {
-    if (scrollRef.current) {
-      try { scrollRef.current.scrollToEnd({ animated: true }) } catch (e) { }
+    if (!loading && messages.length > 0 && scrollRef.current) {
+      setTimeout(() => {
+        try {
+          scrollRef.current.scrollToEnd({ animated: true });
+        } catch (e) {}
+      }, 100); // delay nhỏ để đảm bảo render xong
     }
-  }, [messages])
+  }, [loading, messages]);
 
   const handleSend = async () => {
     if (!message.trim() || sending) return

@@ -19,6 +19,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import logo from "../../assets/logoBrand.png";
 import userService from "../../services/userService";
+import socketService from "../../services/socketService";
 
 export default function LoginScreen() {
   const nav = useNavigation();
@@ -103,6 +104,10 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
+      
+      // Disconnect socket cũ trước khi đăng nhập user mới
+      socketService.disconnect();
+      
       const res = await userService.loginUser({ phoneNumber, password });
 
       if (!res.success) {

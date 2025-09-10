@@ -100,6 +100,9 @@ const MessagesListScreen = () => {
         setError('Không thể lấy thông tin người dùng');
         return;
       }
+
+      console.log('Current user:', userResponse.data);
+      
       const userId = userResponse.data._id;
       setCurrentUser(userResponse.data);
       const response = await conversationService.getAllConversationsByUserId(userId);

@@ -14,9 +14,9 @@ class SocketService {
 
   async connect() {
     try {
-      if (this.socket && this.isConnected) {
-        console.log('📡 Socket already connected');
-        return;
+      // Luôn disconnect trước để đảm bảo kết nối mới hoàn toàn
+      if (this.socket) {
+        this.disconnect();
       }
 
       // Kiểm tra user đã đăng nhập chưa bằng userService
@@ -179,6 +179,9 @@ class SocketService {
       this.isConnected = false;
       this.listeners.clear();
       this.messageQueue = [];
+      
+      // Reset memory để đảm bảo kết nối mới hoàn toàn
+      this.reconnectAttempts = 0;
     }
   }
 
