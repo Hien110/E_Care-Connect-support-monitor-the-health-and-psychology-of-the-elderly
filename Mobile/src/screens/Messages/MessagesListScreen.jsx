@@ -10,7 +10,8 @@ import {
   StatusBar,
   ActivityIndicator,
   Image,
-  RefreshControl
+  RefreshControl,
+  Dimensions
 } from 'react-native';
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -18,6 +19,11 @@ import { conversationService } from '../../services/conversationService';
 import { userService } from '../../services/userService';
 import socketService from '../../services/socketService';
 import { formatTime, formatMessagePreview } from '../../utils/timeFormat';
+
+// Responsive helpers
+const { width, height } = Dimensions.get('window');
+const wp = (percent) => width * (parseFloat(percent) / 100);
+const hp = (percent) => height * (parseFloat(percent) / 100);
 
 const MessagesListScreen = () => {
   const navigation = useNavigation();
@@ -245,6 +251,7 @@ const MessagesListScreen = () => {
   );
 };
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -254,75 +261,83 @@ const styles = StyleSheet.create({
     backgroundColor: '#2196F3',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(1.5),
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: hp(0.2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: wp(1),
     justifyContent: 'center',
   },
   backButton: {
     position: 'absolute',
-    left: 16,
-    padding: 8,
+    left: wp(4),
+    padding: wp(2),
   },
   headerTitle: {
     color: 'white',
-    fontSize: 20,
+    fontSize: wp(4.5),
     fontWeight: '600',
     textAlign: 'center',
   },
   searchContainer: {
     backgroundColor: '#2196F3',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: wp(4),
+    paddingBottom: hp(2),
   },
   searchBar: {
     backgroundColor: 'white',
-    borderRadius: 25,
+    borderRadius: wp(6),
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(1.5),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: hp(0.1) },
+    shadowOpacity: 0.1,
+    shadowRadius: wp(0.5),
   },
   searchIcon: {
-    marginRight: 8,
-    fontSize: 16,
+    marginRight: wp(3),
+    fontSize: wp(5),
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: wp(4),
     color: '#333',
   },
   conversationsList: {
     flex: 1,
+    backgroundColor: 'white',
   },
   conversationItem: {
     backgroundColor: 'white',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(2),
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: wp(12),
+    height: wp(12),
+    borderRadius: wp(6),
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: wp(3),
+    position: 'relative',
+    overflow: 'hidden',
   },
   avatarImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: '100%',
+    height: '100%',
+    borderRadius: wp(6),
   },
   avatarText: {
-    fontSize: 20,
+    fontSize: wp(5),
     fontWeight: '600',
     color: '#666',
   },
@@ -333,29 +348,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 4,
+    marginBottom: hp(0.5),
   },
   nameContainer: {
     flex: 1,
   },
   name: {
-    fontSize: 16,
+    fontSize: wp(4),
     fontWeight: '600',
     color: '#333',
-    marginBottom: 2,
+    marginBottom: hp(0.3),
   },
   timeContainer: {
     alignItems: 'flex-end',
   },
   time: {
-    fontSize: 12,
+    fontSize: wp(3),
     color: '#999',
-    marginBottom: 4,
+    marginBottom: hp(0.3),
   },
   message: {
-    fontSize: 14,
+    fontSize: wp(3.5),
     color: '#666',
-    lineHeight: 20,
+    lineHeight: hp(2.5),
   },
   // Styles cho tin nhắn chưa đọc
   unreadItem: {
@@ -374,30 +389,32 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: wp(2.2),
+    height: wp(2.2),
+    borderRadius: wp(1.1),
     backgroundColor: '#2196F3',
-    marginTop: 2,
+    marginTop: hp(0.3),
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: hp(6),
   },
   loadingText: {
-    marginTop: 10,
-    fontSize: 16,
+    marginTop: hp(1),
+    fontSize: wp(4),
     color: '#666',
+    textAlign: 'center',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: wp(5),
   },
   errorText: {
-    fontSize: 16,
+    fontSize: wp(4),
     color: 'red',
     textAlign: 'center',
   },
@@ -405,18 +422,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 80,
+    paddingVertical: hp(8),
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: wp(4),
     color: '#666',
-    marginTop: 16,
+    marginTop: hp(2),
     textAlign: 'center',
   },
   emptySubText: {
-    fontSize: 14,
+    fontSize: wp(3.5),
     color: '#999',
-    marginTop: 8,
+    marginTop: hp(1),
     textAlign: 'center',
   },
 });
