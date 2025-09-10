@@ -121,8 +121,14 @@ export default function LoginScreen() {
 
       setSuccess("Đăng nhập thành công");
 
-      const routeName = ROLE_TO_ROUTE[res.user?.role] || "DefaultScreen";
+      // Kết nối socket với token mới
+      try {
+        await socketService.connect();
+      } catch (err) {
+        console.error('Socket connect after login failed:', err);
+      }
 
+      const routeName = ROLE_TO_ROUTE[res.user?.role] || "DefaultScreen";
       nav.reset({
         index: 0,
         routes: [{ name: routeName }],

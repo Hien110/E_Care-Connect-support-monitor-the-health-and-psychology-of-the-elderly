@@ -140,43 +140,15 @@ const ChatScreen = () => {
     return () => { mounted = false }
   }, [conversationId])
 
-  // Socket.IO connection and event handlers
+  // Join/leave conversation khi vào/thoát chat, không connect lại socket
   useEffect(() => {
-    const initSocket = async () => {
-      // Chỉ kết nối socket khi đã có thông tin user
-      if (!currentUser) {
-        console.log('⏳ Waiting for user info before connecting socket...');
-        return;
-      }
-
-      try {
-        console.log('🔌 Initializing socket for user:', currentUser.fullName || currentUser.phoneNumber);
-        await socketService.connect();
-        
-        if (conversationId) {
-          socketService.joinConversation(conversationId);
-        }
-      } catch (error) {
-        console.error('Socket connection failed:', error);
-        
-        // Hiển thị error khác nhau tùy theo lỗi
-        if (error.message.includes('login')) {
-          setError('Vui lòng đăng nhập lại để sử dụng tính năng real-time.');
-        } else {
-          setError('Không thể kết nối real-time. Tin nhắn vẫn hoạt động bình thường.');
-        }
-      }
-    };
-
-    initSocket();
-
-    // Không cleanup leaveConversation khi component unmount
-    // Vì MessagesListScreen vẫn cần nhận conversation_updated events
-    return () => {
-      // Chỉ leave conversation khi thực sự cần thiết (ví dụ: logout)
-      // socketService.leaveConversation(conversationId);
-    };
-  }, [conversationId, currentUser]); // Thêm currentUser vào dependency
+    if (currentUser && conversationId) {
+      socketService.joinConversation(conversationId);
+    }
+    // Không leaveConversation khi unmount để giữ nhận event conversation_updated ở MessagesListScreen
+    // Nếu muốn leave, hãy uncomment dòng dưới
+    // return () => { socketService.leaveConversation(conversationId); };
+  }, [conversationId, currentUser]);
 
   // Listen for new messages via Socket.IO
   useEffect(() => {

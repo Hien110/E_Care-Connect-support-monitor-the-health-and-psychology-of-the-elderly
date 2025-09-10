@@ -58,7 +58,7 @@ class SocketService {
       }
 
       // Kết nối đến server
-      const serverUrl = 'http://192.168.1.98:3000'; // Thay đổi theo IP server của bạn
+      const serverUrl = 'http://192.168.0.109:3000'; // Thay đổi theo IP server của bạn
       
       console.log('🔌 Connecting to:', serverUrl);
       console.log('👤 User:', userResponse.data.fullName || userResponse.data.phoneNumber);

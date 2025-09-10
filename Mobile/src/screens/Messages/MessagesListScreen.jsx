@@ -29,21 +29,14 @@ const MessagesListScreen = () => {
 
   useEffect(() => {
     fetchConversations();
-    initializeSocket();
-  }, []);
-
-  const initializeSocket = async () => {
-    try {
-      await socketService.connect();
-      
-      // Listen for new messages to update conversation list
-      socketService.on('new_message', handleNewMessage);
-      socketService.on('conversation_updated', handleConversationUpdated);
-      
-    } catch (error) {
-      console.error('Failed to initialize socket:', error);
-    }
-  };
+    // Lắng nghe sự kiện socket, không connect lại socket ở đây
+    socketService.on('new_message', handleNewMessage);
+    socketService.on('conversation_updated', handleConversationUpdated);
+    return () => {
+      socketService.off('new_message', handleNewMessage);
+      socketService.off('conversation_updated', handleConversationUpdated);
+    };
+  }, [handleNewMessage, handleConversationUpdated]);
 
   // Helper function để update conversation với latest message
   const updateConversationList = useCallback((conversationId, latestMessage) => {
