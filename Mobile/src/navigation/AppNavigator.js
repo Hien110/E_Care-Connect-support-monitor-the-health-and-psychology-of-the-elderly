@@ -72,7 +72,7 @@ const AppNavigator = () => {
         />
         <Stack.Screen
           name="SupporterHome"
-          component={withFooter(SupporterHomeScreen, 'home')}
+          component={withFooter(SupporterHomeScreen, 'homeSupporter')}
           options={{ headerShown: false }}
         />
         <Stack.Screen
