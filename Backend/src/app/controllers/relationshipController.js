@@ -1,6 +1,7 @@
 const { get } = require("mongoose");
 const Relationship = require("../models/Relationship.js");
 const User = require("../models/User.js");
+const Conversation = require("../models/Conversation.js");
 
 const RelationshipController = {
   getAllRelationships: async (req, res) => {
@@ -156,10 +157,42 @@ const RelationshipController = {
       relationship.status = 'accepted';
       relationship.respondedAt = new Date();
       await relationship.save();
+
+      // Kiểm tra xem đã có conversation giữa family và elderly chưa
+      const existingConversation = await Conversation.findOne({
+        participants: {
+          $all: [
+            { $elemMatch: { user: relationship.family } },
+            { $elemMatch: { user: relationship.elderly } }
+          ]
+        },
+        isActive: true
+      });
+
+      let conversation = existingConversation;
+
+      if (!existingConversation) {
+        // Tạo conversation mới cho family và elderly
+        const newConversation = new Conversation({
+          participants: [
+            { user: relationship.family },
+            { user: relationship.elderly }
+          ],
+          isActive: true
+        });
+
+        conversation = await newConversation.save();
+      }
+
       return res.status(200).json({
         success: true,
-        message: "Mối quan hệ đã được chấp nhận",
-        data: relationship
+        message: existingConversation 
+          ? "Mối quan hệ đã được chấp nhận" 
+          : "Mối quan hệ đã được chấp nhận và cuộc trò chuyện đã được tạo",
+        data: {
+          relationship: relationship,
+          conversation: conversation
+        }
       });
     } catch (error) {
       console.error("Error accepting relationship:", error);
