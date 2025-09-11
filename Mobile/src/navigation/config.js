@@ -42,7 +42,7 @@ export const routeMap = {
   me: 'PersonalInfo',
   dashboard: 'FamilyDashboard',
   alerts: 'ALERTS',
-  tasks: 'SUPPORTER_TASKS',
+  tasks: 'SupporterIntro',
   patients: 'DOCTOR_PATIENTS',
   insights: 'DOCTOR_INSIGHTS',
 };
