@@ -849,7 +849,76 @@ const UserController = {
         message: err.message
       });
     }
+  },
+  updateAvatar: async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Chưa đăng nhập" });
+    }
+
+    console.log(
+      'has file?',
+      !!req.file,
+      req.file && {
+        field: req.file.fieldname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+      }
+    );
+
+    // Kiểm tra có file gửi kèm không (multipart/form-data)
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "Thiếu file avatar" });
+    }
+
+    
+    const fileBlob = new Blob([req.file.buffer], { type: req.file.mimetype });
+
+    // Cấu hình Cloudinary
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = "ecareproject"; // preset của bạn
+
+    
+    const formData = new FormData();
+    formData.append("file", fileBlob, req.file.originalname);  
+    formData.append("upload_preset", uploadPreset);
+
+    
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    
+    if (!response.ok) {
+      return res.status(500).json({ success: false, message: `Lỗi upload Cloudinary: ${response.status}` });
+    }
+
+    const data = await response.json();
+    if (!data.secure_url) {
+      return res.status(500).json({ success: false, message: "Upload thành công nhưng không có secure_url" });
+    }
+
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Người dùng không tồn tại" });
+    }
+
+    user.avatar = data.secure_url;
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json({
+      success: true,
+      message: "Cập nhật avatar thành công",
+      data: { avatar: user.avatar },
+    });
+  } catch (err) {
+    console.error("updateAvatar error:", err);
+    return res.status(500).json({ success: false, message: "Đã xảy ra lỗi khi cập nhật avatar" });
   }
+}
 };
 
 module.exports = UserController;

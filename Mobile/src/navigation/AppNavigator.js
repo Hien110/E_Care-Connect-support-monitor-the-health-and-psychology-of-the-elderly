@@ -74,7 +74,7 @@ const AppNavigator = () => {
         />
         <Stack.Screen
           name="SupporterHome"
-          component={withFooter(SupporterHomeScreen, 'home')}
+          component={withFooter(SupporterHomeScreen, 'homeSupporter')}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -122,7 +122,7 @@ const AppNavigator = () => {
         />
         <Stack.Screen
           name="PersonalInfo"
-          component={PersonalInfoScreen}
+          component={withFooter(PersonalInfoScreen, 'me')}
           options={{ headerShown: false }}
         />
         <Stack.Screen

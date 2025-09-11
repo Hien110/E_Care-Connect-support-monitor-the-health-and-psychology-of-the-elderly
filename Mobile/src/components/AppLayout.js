@@ -3,26 +3,15 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import FooterNav from './FooterNav';
 
-const TABS = [
-  { key: 'mood',     label: 'Cảm xúc',  icon: 'heart' },
-  { key: 'plan',     label: 'Lịch',     icon: 'calendar' },
-
-  // HOME là nút giữa (FAB)
-  { key: 'home',     label: 'Trang chủ',icon: 'home' },
-
-  { key: 'messages', label: 'Tin nhắn', icon: 'chatbubble' },
-  { key: 'me',       label: 'Cá nhân',  icon: 'person' },
-];
-
-const AppLayout = ({ children, activeTab, onChangeTab }) => {
+const AppLayout = ({ children, activeTab, onChangeTab, centerKey, TABS }) => {
   return (
     <View style={styles.root}>
       <View style={styles.content}>{children}</View>
       <FooterNav
-        items={TABS}
+        items={TABS}          // Sử dụng TABS từ props
         activeKey={activeTab}
         onTabPress={onChangeTab}
-        centerKey="home" // quan trọng: chỉ định nút giữa
+        centerKey={centerKey}  // Truyền centerKey từ props
       />
     </View>
   );
