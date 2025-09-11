@@ -19,6 +19,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import logo from "../../assets/logoBrand.png";
 import userService from "../../services/userService";
+import socketService from "../../services/socketService";
 
 export default function LoginScreen() {
   const nav = useNavigation();
@@ -103,6 +104,10 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
+      
+      // Disconnect socket cũ trước khi đăng nhập user mới
+      socketService.disconnect();
+      
       const res = await userService.loginUser({ phoneNumber, password });
 
       if (!res.success) {
@@ -116,8 +121,14 @@ export default function LoginScreen() {
 
       setSuccess("Đăng nhập thành công");
 
-      const routeName = ROLE_TO_ROUTE[res.user?.role] || "DefaultScreen";
+      // Kết nối socket với token mới
+      try {
+        await socketService.connect();
+      } catch (err) {
+        console.error('Socket connect after login failed:', err);
+      }
 
+      const routeName = ROLE_TO_ROUTE[res.user?.role] || "DefaultScreen";
       nav.reset({
         index: 0,
         routes: [{ name: routeName }],

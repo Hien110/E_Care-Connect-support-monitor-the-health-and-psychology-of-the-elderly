@@ -3,6 +3,7 @@ import React from 'react';
 import AppLayout from './AppLayout';
 import { roleTabs, routeMap } from '../navigation/config';
 
+
 import userService from '../services/userService';
 
 const withFooter = (ScreenComp, activeKey) => (props) => {
@@ -14,6 +15,7 @@ const withFooter = (ScreenComp, activeKey) => (props) => {
       setRole(user.data.role || 'supporter');
     });
   }, []);
+
 
   if (!role) return null; // Hoặc có thể là loading component
 

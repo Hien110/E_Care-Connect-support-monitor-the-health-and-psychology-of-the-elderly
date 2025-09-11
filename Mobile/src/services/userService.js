@@ -29,6 +29,38 @@ export const userService = {
 
     return null;
   },
+  // Tải ảnh CCCD 2 mặt hoặc gửi identityCard để trích xuất
+  uploadIdentity: async ({ phoneNumber, identityCard, frontImageBase64, backImageBase64 }) => {
+    try {
+      const response = await api.post(
+        '/users/upload-identity',
+        {
+          phoneNumber,
+          identityCard,
+          frontImageBase64,
+          backImageBase64,
+        },
+        {
+          timeout: 120000,
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+        }
+      );
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      // Map common network errors to readable messages
+      let message = error?.response?.data?.message || error?.message || 'Lỗi mạng';
+      if (error?.code === 'ECONNABORTED') message = 'Hết thời gian chờ. Vui lòng thử lại.';
+      if (error?.message?.includes('Network Error')) message = 'Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.';
+      if (error?.response?.status === 413) message = 'Ảnh quá lớn. Vui lòng chụp lại với chất lượng thấp hơn.';
+      if (error?.response?.status === 422) message = error?.response?.data?.message || 'Không trích xuất được thông tin từ ảnh.';
+      return { success: false, message };
+    }
+  },
 
   setToken: async token => {
     if (RNStorage) {
@@ -108,7 +140,7 @@ export const userService = {
     }
   },
 
-  // B3: Nhập CCCD
+  // (Legacy) B3: Nhập CCCD
   setIdentity: async ({ phoneNumber, identityCard }) => {
     try {
       const response = await api.put('/users/set-identity', {
@@ -127,14 +159,11 @@ export const userService = {
     }
   },
 
-  // B4: Hoàn tất hồ sơ
-  completeProfile: async ({ phoneNumber, fullName, dateOfBirth, gender, password }) => {
+  // B4: Hoàn tất hồ sơ (chỉ cần password, data lấy từ OCR)
+  completeProfile: async ({ phoneNumber, password }) => {
     try {
       const response = await api.put('/users/complete-profile', {
         phoneNumber,
-        fullName,
-        dateOfBirth,
-        gender,
         password,
       });
 
@@ -186,10 +215,28 @@ export const userService = {
   },
 
   logout: async () => {
+    // Disconnect socket trước khi xóa token
+    try {
+      const socketService = require('./socketService').default;
+      socketService.disconnect();
+    } catch (error) {
+      console.log('Socket disconnect warning:', error.message);
+    }
+    
     await userService.setToken(null);
     await userService.setUser(null);
   },
 
+
+  // Cleanup Redis temp session
+  cleanupTempData: async ({ phoneNumber }) => {
+    try {
+      const response = await api.post('/users/cleanup-temp', { phoneNumber });
+      return { success: true, message: response.data?.message };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
   //Thay đổi mật khẩu
   changePassword: async ({ oldPassword, newPassword }) => {
     try {

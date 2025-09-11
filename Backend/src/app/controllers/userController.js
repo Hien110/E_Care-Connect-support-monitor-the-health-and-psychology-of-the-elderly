@@ -8,6 +8,7 @@ const redis = require("../../utils/redis");
 const sendOTPEmail = require("../../utils/sendOTP");
 const avatarDefault =
   "https://i.pinimg.com/736x/c6/e5/65/c6e56503cfdd87da299f72dc416023d4.jpg";
+const { extractIdentityData } = require("../../utils/ocr");
 
 function generate4Digits() {
   return Math.floor(1000 + Math.random() * 9000).toString();
@@ -55,6 +56,97 @@ const UserController = {
     }
   },
 
+  // Nhận ảnh CCCD 2 mặt hoặc identityCard -> trích xuất thông tin -> lưu Redis tempRegister:{phone}
+  uploadIdentityImage: async (req, res) => {
+    try {
+      const { phoneNumber, identityCard, frontImageBase64, backImageBase64 } = req.body;
+      if (!phoneNumber || (!identityCard && !(frontImageBase64 && backImageBase64))) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Thiếu dữ liệu: cần identityCard hoặc ảnh CCCD 2 mặt" });
+      }
+
+      // Validate base64 sizes to avoid payload overflow/network error confusion
+      const sizeOf = (b64) => {
+        if (!b64) return 0;
+        const m = /^data:.*?;base64,(.*)$/.exec(b64);
+        const raw = m ? m[1] : b64.replace(/^data:.*;base64,/, "");
+        // bytes = 3/4 of base64 length approximately
+        return Math.floor((raw.length * 3) / 4);
+      };
+      const frontSize = sizeOf(frontImageBase64);
+      const backSize = sizeOf(backImageBase64);
+      const maxBytes = 45 * 1024 * 1024; // 45MB safety (Express limit is 50MB)
+      if (frontSize > maxBytes || backSize > maxBytes) {
+        return res.status(413).json({ success: false, message: "Ảnh quá lớn (>45MB). Vui lòng chụp lại ảnh rõ hơn nhưng kích thước nhỏ hơn." });
+      }
+
+      const key = `tempRegister:${phoneNumber}`;
+      const dataStr = await redis.get(key);
+      if (!dataStr) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Session đăng ký đã hết hạn" });
+      }
+
+      const temp = JSON.parse(dataStr);
+      if (!temp.otpVerified) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Vui lòng xác thực OTP trước" });
+      }
+
+      const extracted = await extractIdentityData({ identityCard, frontImageBase64, backImageBase64 });
+
+      if (!extracted) {
+        return res.status(422).json({ success: false, message: "Không thể trích xuất thông tin từ ảnh. Vui lòng chụp rõ, đủ sáng và thử lại." });
+      }
+      if (!extracted.identityCard && !identityCard) {
+        return res.status(422).json({ success: false, message: "Không tìm thấy số CCCD trong ảnh. Vui lòng kiểm tra lại và thử lại." });
+      }
+
+      if (extracted?.identityCard) {
+        const exists = await User.findOne({ identityCard: extracted.identityCard });
+        if (exists) {
+          return res
+            .status(409)
+            .json({ success: false, message: "CCCD đã được đăng ký" });
+        }
+      }
+
+      const updated = {
+        ...temp,
+        identityCard: extracted.identityCard || temp.identityCard,
+        ocrData: {
+          fullName: extracted.fullName,
+          dateOfBirth: extracted.dateOfBirth,
+          gender: extracted.gender,
+          address: extracted.address,
+        },
+      };
+
+      await redis.set(key, JSON.stringify(updated), "EX", 900);
+
+      return res.status(200).json({
+        success: true,
+        message: "Trích xuất thông tin CCCD thành công",
+        data: {
+          identityCard: updated.identityCard,
+          ...updated.ocrData,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      if (err?.response?.status === 400 || err?.message?.includes('Invalid image')) {
+        return res.status(400).json({ success: false, message: "Ảnh không hợp lệ. Vui lòng chụp lại ảnh rõ nét và đúng định dạng." });
+      }
+      if (err?.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ success: false, message: "Kích thước ảnh vượt quá giới hạn." });
+      }
+      return res.status(500).json({ success: false, message: "Lỗi máy chủ khi xử lý ảnh CCCD. Vui lòng thử lại sau." });
+    }
+  },
+
   // B1: gửi OTP
   sendOTP: async (req, res) => {
     try {
@@ -81,20 +173,14 @@ const UserController = {
           .json({ success: false, message: "Số điện thoại đã được đăng ký" });
       }
 
-      const e164 = normalizeVNPhone(phoneNumber);
-      const code = generate4Digits();
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-      // Lưu vào Redis (TTL 5 phút)
-      const key = `tempRegister:${phoneNumber}`;
-      const tempData = {
-        phoneNumber,
-        role,
-        code,
-        expiresAt,
-        otpVerified: false,
-      };
-      await redis.set(key, JSON.stringify(tempData), "EX", 300);
+    const e164 = normalizeVNPhone(phoneNumber);
+    const code = generate4Digits();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    console.log(`Generated OTP for ${phoneNumber}: ${code} (expires at ${expiresAt.toISOString()})`);
+    // Lưu vào Redis (TTL 5 phút)
+    const key = `tempRegister:${phoneNumber}`;
+    const tempData = { phoneNumber, role, code, expiresAt, otpVerified: false };
+    await redis.set(key, JSON.stringify(tempData), "EX", 300);
 
       // Gửi SMS
       const message = `Mã xác nhận OTP của bạn là: ${code}`;
@@ -225,7 +311,11 @@ const UserController = {
         .status(404)
         .json({ success: false, message: "Session đăng ký đã hết hạn" });
     }
-
+    if (typeof password !== "string" || password.length < 6) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Mật khẩu phải có ít nhất 6 ký tự" });
+    }
     const temp = JSON.parse(dataStr);
     if (!temp.otpVerified) {
       return res
@@ -255,13 +345,15 @@ const UserController = {
 
     const hashed = await bcrypt.hash(password, 12);
 
+    const ocr = temp.ocrData || {};
     const user = new User({
       phoneNumber,
       password: hashed,
       role: temp.role,
-      fullName,
-      gender,
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      fullName: ocr.fullName || "",
+      gender: ocr.gender || "other",
+      dateOfBirth: ocr.dateOfBirth ? new Date(ocr.dateOfBirth) : null,
+      address: ocr.address || null,
       identityCard: temp.identityCard,
       isActive: true,
       avatar: avatarDefault,
@@ -298,6 +390,58 @@ const UserController = {
     return res.status(500).json({ success: false, message: err.message });
   }
 },
+
+  // Cleanup Redis temp register session (optional helper)
+  cleanupTemp: async (req, res) => {
+    try {
+      const { phoneNumber } = req.body;
+      if (!phoneNumber) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Thiếu số điện thoại" });
+      }
+      const key = `tempRegister:${phoneNumber}`;
+      await redis.del(key);
+      return res.status(200).json({ success: true, message: "Đã xoá session tạm" });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+  
+  // Lấy dữ liệu đăng ký tạm (bao gồm ocrData) từ Redis theo phoneNumber
+  getTempRegister: async (req, res) => {
+    try {
+      const { phoneNumber } = req.query;
+      if (!phoneNumber) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Thiếu số điện thoại" });
+      }
+      const key = `tempRegister:${phoneNumber}`;
+      const dataStr = await redis.get(key);
+      if (!dataStr) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Không tìm thấy session tạm" });
+      }
+      const data = JSON.parse(dataStr);
+      return res.status(200).json({
+        success: true,
+        data: {
+          phoneNumber: data.phoneNumber,
+          role: data.role,
+          otpVerified: !!data.otpVerified,
+          identityCard: data.identityCard || null,
+          ocrData: data.ocrData || null,
+          expiresAt: data.expiresAt || null,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
     
   // Đăng nhập
   loginUser: async (req, res) => {

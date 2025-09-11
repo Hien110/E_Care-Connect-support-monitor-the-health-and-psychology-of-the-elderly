@@ -13,13 +13,13 @@ db.connect();
 
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://192.168.0.109:3000'],
   credentials: true,
 }));
 
 // Middleware
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '50mb' }));
 app.use(methodOverride('_method'));
 app.use(morgan('combined'));
 
@@ -29,6 +29,15 @@ app.set('transporter', mailer);
 
 // Khởi tạo routes
 route(app);
+
+// Error handler to return JSON for large payloads and generic errors
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (err?.type === 'entity.too.large' || err?.status === 413) {
+    return res.status(413).json({ success: false, message: 'Tệp ảnh quá lớn. Vui lòng chụp lại hoặc giảm kích thước ảnh.' });
+  }
+  next(err);
+});
 
 // Xuất app để dùng cho test
 module.exports = app;
