@@ -32,22 +32,33 @@ export const userService = {
   // Tải ảnh CCCD 2 mặt hoặc gửi identityCard để trích xuất
   uploadIdentity: async ({ phoneNumber, identityCard, frontImageBase64, backImageBase64 }) => {
     try {
-      const response = await api.post('/users/upload-identity', {
-        phoneNumber,
-        identityCard,
-        frontImageBase64,
-        backImageBase64,
-      });
+      const response = await api.post(
+        '/users/upload-identity',
+        {
+          phoneNumber,
+          identityCard,
+          frontImageBase64,
+          backImageBase64,
+        },
+        {
+          timeout: 120000,
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+        }
+      );
       return {
         success: true,
         data: response.data.data,
         message: response.data.message,
       };
     } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || error.message,
-      };
+      // Map common network errors to readable messages
+      let message = error?.response?.data?.message || error?.message || 'Lỗi mạng';
+      if (error?.code === 'ECONNABORTED') message = 'Hết thời gian chờ. Vui lòng thử lại.';
+      if (error?.message?.includes('Network Error')) message = 'Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.';
+      if (error?.response?.status === 413) message = 'Ảnh quá lớn. Vui lòng chụp lại với chất lượng thấp hơn.';
+      if (error?.response?.status === 422) message = error?.response?.data?.message || 'Không trích xuất được thông tin từ ảnh.';
+      return { success: false, message };
     }
   },
 

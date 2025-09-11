@@ -66,6 +66,21 @@ const UserController = {
           .json({ success: false, message: "Thiếu dữ liệu: cần identityCard hoặc ảnh CCCD 2 mặt" });
       }
 
+      // Validate base64 sizes to avoid payload overflow/network error confusion
+      const sizeOf = (b64) => {
+        if (!b64) return 0;
+        const m = /^data:.*?;base64,(.*)$/.exec(b64);
+        const raw = m ? m[1] : b64.replace(/^data:.*;base64,/, "");
+        // bytes = 3/4 of base64 length approximately
+        return Math.floor((raw.length * 3) / 4);
+      };
+      const frontSize = sizeOf(frontImageBase64);
+      const backSize = sizeOf(backImageBase64);
+      const maxBytes = 45 * 1024 * 1024; // 45MB safety (Express limit is 50MB)
+      if (frontSize > maxBytes || backSize > maxBytes) {
+        return res.status(413).json({ success: false, message: "Ảnh quá lớn (>45MB). Vui lòng chụp lại ảnh rõ hơn nhưng kích thước nhỏ hơn." });
+      }
+
       const key = `tempRegister:${phoneNumber}`;
       const dataStr = await redis.get(key);
       if (!dataStr) {
@@ -82,6 +97,13 @@ const UserController = {
       }
 
       const extracted = await extractIdentityData({ identityCard, frontImageBase64, backImageBase64 });
+
+      if (!extracted) {
+        return res.status(422).json({ success: false, message: "Không thể trích xuất thông tin từ ảnh. Vui lòng chụp rõ, đủ sáng và thử lại." });
+      }
+      if (!extracted.identityCard && !identityCard) {
+        return res.status(422).json({ success: false, message: "Không tìm thấy số CCCD trong ảnh. Vui lòng kiểm tra lại và thử lại." });
+      }
 
       if (extracted?.identityCard) {
         const exists = await User.findOne({ identityCard: extracted.identityCard });
@@ -115,7 +137,13 @@ const UserController = {
       });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ success: false, message: err.message });
+      if (err?.response?.status === 400 || err?.message?.includes('Invalid image')) {
+        return res.status(400).json({ success: false, message: "Ảnh không hợp lệ. Vui lòng chụp lại ảnh rõ nét và đúng định dạng." });
+      }
+      if (err?.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ success: false, message: "Kích thước ảnh vượt quá giới hạn." });
+      }
+      return res.status(500).json({ success: false, message: "Lỗi máy chủ khi xử lý ảnh CCCD. Vui lòng thử lại sau." });
     }
   },
 
@@ -283,7 +311,11 @@ const UserController = {
         .status(404)
         .json({ success: false, message: "Session đăng ký đã hết hạn" });
     }
-
+    if (typeof password !== "string" || password.length < 6) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Mật khẩu phải có ít nhất 6 ký tự" });
+    }
     const temp = JSON.parse(dataStr);
     if (!temp.otpVerified) {
       return res

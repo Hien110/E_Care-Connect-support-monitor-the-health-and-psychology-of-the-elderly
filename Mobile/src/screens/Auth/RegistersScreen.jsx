@@ -13,7 +13,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { userService } from '../../services/userService';
 import { launchCamera } from 'react-native-image-picker';
 import { PermissionsAndroid, Platform } from 'react-native';
-import logo from '../../assets/logoE_Care.png';
+import logo from "../../assets/logoBrand.png";
 import { useNavigation } from '@react-navigation/native';
 import { useRef } from 'react';
 const Btn = ({ title, onPress, disabled }) => (
@@ -166,7 +166,7 @@ export default function RegistersScreen() {
     const result = await launchCamera({
       mediaType: 'photo',
       includeBase64: true,
-      quality: 0.9,
+      quality: 0.6, // reduce size to avoid 413
       cameraType: 'back',
       saveToPhotos: false,
       includeExtra: true,
@@ -215,7 +215,10 @@ export default function RegistersScreen() {
   };
 
   const handleComplete = async () => {
-    if (!password) return;
+    if (!password || password.length < 6) {
+      Alert.alert('Mật khẩu không hợp lệ', 'Mật khẩu phải có ít nhất 6 ký tự');
+      return;
+    }
     try {
       setLoading(true);
       const res = await userService.completeProfile({ phoneNumber, password });
@@ -442,81 +445,97 @@ export default function RegistersScreen() {
 
       {/* STEP 2.1 nhập OTP */}
       {step === 2.1 && (
-        <View style={{ flex: 1, paddingTop: 80, alignItems: 'center' }}>
-          <TouchableOpacity
-            style={{ position: 'absolute', top: 20, left: 20, zIndex: 20 }}
-            onPress={() => handleBack(2)}
-          >
-            <Icon name="arrow-back" size={28} color="#000" />
-          </TouchableOpacity>
+  <View style={{ flex: 1, paddingTop: 80, alignItems: 'center' }}>
+    <TouchableOpacity
+      style={{ position: 'absolute', top: 20, left: 20, zIndex: 20 }}
+      onPress={() => handleBack(2)}
+    >
+      <Icon name="arrow-back" size={28} color="#000" />
+    </TouchableOpacity>
 
-          <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 12 }}>
-            Xác thực số điện thoại
-          </Text>
-          <Text
-            style={{ color: '#666', marginBottom: 20, textAlign: 'center' }}
-          >
-            Chúng tôi sẽ gửi một mã đến số điện thoại của bạn để xác nhận đó là
-            của bạn
-          </Text>
+    <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 12 }}>
+      Xác thực số điện thoại
+    </Text>
+    <Text
+      style={{ color: '#666', marginBottom: 20, textAlign: 'center' }}
+    >
+      Chúng tôi sẽ gửi một mã đến số điện thoại của bạn để xác nhận đó là
+      của bạn
+    </Text>
 
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              marginBottom: 8,
-            }}
-          >
-            {[0, 1, 2, 3].map(i => (
-              <TextInput
-                key={i}
-                ref={ref => (inputRefs.current[i] = ref)} // tham chiếu input
-                value={otp[i] || ''}
-                onChangeText={val => {
-                  let newOtp = otp.split('');
-                  newOtp[i] = val.replace(/[^0-9]/g, '');
-                  setOtp(newOtp.join(''));
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginBottom: 8,
+      }}
+    >
+      {[0, 1, 2, 3].map(i => (
+        <TextInput
+          key={i}
+          ref={ref => (inputRefs.current[i] = ref)} // tham chiếu input
+          value={otp[i] || ''}
+          onChangeText={val => {
+            const digit = (val || '').replace(/[^0-9]/g, '');
+            const newOtp = otp.split('');
+            newOtp[i] = digit;
+            setOtp(newOtp.join(''));
+            if (digit && i < 3) inputRefs.current[i + 1]?.focus();
+          }}
+          onKeyPress={({ nativeEvent }) => {
+            if (nativeEvent.key === 'Backspace') {
+              const current = otp[i] || '';
+              const newOtp = otp.split('');
+              if (current) {
+                // Xoá số hiện tại và lùi về ô trước
+                newOtp[i] = '';
+                setOtp(newOtp.join(''));
+                if (i > 0) inputRefs.current[i - 1]?.focus();
+              } else if (i > 0) {
+                // Ô trống: lùi về ô trước và xoá nó
+                inputRefs.current[i - 1]?.focus();
+                newOtp[i - 1] = '';
+                setOtp(newOtp.join(''));
+              }
+            }
+          }}
+          maxLength={1}
+          keyboardType="number-pad"
+          style={{
+            width: 50,
+            height: 50,
+            borderWidth: 2,
+            borderColor: otpError ? 'red' : '#ccc',
+            textAlign: 'center',
+            fontSize: 20,
+            marginHorizontal: 6,
+            borderRadius: 8,
+            color: '#000', // chữ màu đen
+          }}
+        />
+      ))}
+    </View>
 
-                  if (val && i < 3) {
-                    inputRefs.current[i + 1]?.focus(); // nhảy sang ô tiếp theo
-                  }
-                }}
-                maxLength={1}
-                keyboardType="number-pad"
-                style={{
-                  width: 50,
-                  height: 50,
-                  borderWidth: 2,
-                  borderColor: otpError ? 'red' : '#ccc',
-                  textAlign: 'center',
-                  fontSize: 20,
-                  marginHorizontal: 6,
-                  borderRadius: 8,
-                }}
-              />
-            ))}
-          </View>
+    {/* Hiển thị lỗi OTP sai */}
+    {otpError && (
+      <Text style={{ color: 'red', fontSize: 12, marginBottom: 12 }}>
+        Mã OTP không chính xác
+      </Text>
+    )}
 
-          {/* Hiển thị lỗi OTP sai */}
-          {otpError && (
-            <Text style={{ color: 'red', fontSize: 12, marginBottom: 12 }}>
-              Mã OTP không chính xác
-            </Text>
-          )}
+    <Btn title="Xác thực" onPress={handleVerifyOTP} />
 
-          <Btn title="Xác thực" onPress={handleVerifyOTP} />
-
-          {countdown > 0 ? (
-            <Text style={{ marginTop: 16, color: '#666' }}>
-              Gửi lại mã trong {countdown}s
-            </Text>
-          ) : (
-            <TouchableOpacity style={{ marginTop: 16 }} onPress={handleSendOTP}>
-              <Text style={{ color: '#007bff' }}>Gửi lại mã</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
+    {countdown > 0 ? (
+      <Text style={{ marginTop: 16, color: '#666' }}>
+        Gửi lại mã trong {countdown}s
+      </Text>
+    ) : (
+      <TouchableOpacity style={{ marginTop: 16 }} onPress={handleSendOTP}>
+        <Text style={{ color: '#007bff' }}>Gửi lại mã</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+)}
 
       {/* STEP 3: Chụp CCCD 2 mặt */}
       {step === 3 && (
@@ -536,8 +555,14 @@ export default function RegistersScreen() {
           </View>
           <Text>Chụp mặt trước CCCD</Text>
           <Btn title="Chụp mặt trước" onPress={() => captureSide('front')} />
+          {frontImage ? (
+            <Image source={{ uri: frontImage }} style={{ width: '100%', height: 180, marginTop: 8, borderRadius: 8 }} />
+          ) : null}
           <Text style={{ marginTop: 12 }}>Chụp mặt sau CCCD</Text>
           <Btn title="Chụp mặt sau" onPress={() => captureSide('back')} />
+          {backImage ? (
+            <Image source={{ uri: backImage }} style={{ width: '100%', height: 180, marginTop: 8, borderRadius: 8 }} />
+          ) : null}
           <Btn title="Trích xuất thông tin" onPress={handleExtractFromImages} disabled={!(frontImage && backImage)} />
         </View>
       )}
@@ -558,12 +583,12 @@ export default function RegistersScreen() {
               style={{ width: 80, height: 80, resizeMode: 'contain' }}
             />
           </View>
-          <Text>Thông tin nhận diện từ CCCD</Text>
-          <TextInput editable={false} value={fullName} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000' }} />
-          <TextInput editable={false} value={dateOfBirth} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000' }} />
-          <TextInput editable={false} value={gender} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000' }} />
-          <TextInput editable={false} value={identityCard} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000' }} />
-          <TextInput editable={false} value={address} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000' }} />
+          <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Arial' : 'sans-serif' }}>Thông tin nhận diện từ CCCD</Text>
+          <TextInput editable={false} value={fullName} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000', fontFamily: Platform.OS === 'ios' ? 'Arial' : 'sans-serif' }} />
+          <TextInput editable={false} value={dateOfBirth} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000', fontFamily: Platform.OS === 'ios' ? 'Arial' : 'sans-serif' }} />
+          <TextInput editable={false} value={gender} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000', fontFamily: Platform.OS === 'ios' ? 'Arial' : 'sans-serif' }} />
+          <TextInput editable={false} value={identityCard} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000', fontFamily: Platform.OS === 'ios' ? 'Arial' : 'sans-serif' }} />
+          <TextInput editable={false} value={address} style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 8,color: '#000', fontFamily: Platform.OS === 'ios' ? 'Arial' : 'sans-serif' }} />
           <TextInput
             placeholder="Mật khẩu (>=6 ký tự)"
             value={password}
