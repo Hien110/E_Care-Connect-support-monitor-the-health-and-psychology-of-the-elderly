@@ -13,7 +13,9 @@ router.post("/loginUser", UserController.loginUser);
 router.post("/send-otp", UserController.sendOTP);
 //xác thực OTP
 router.post("/verify-otp", UserController.verifyOTP);
-//nhập CCCD
+//upload ảnh CCCD -> OCR
+router.post("/upload-identity", UserController.uploadIdentityImage);
+//(legacy) nhập CCCD thủ công
 router.put("/set-identity", UserController.setIdentity);
 //hoàn tất hồ sơ
 router.put("/complete-profile", UserController.completeProfile);
@@ -22,6 +24,11 @@ router.put("/complete-profile", UserController.completeProfile);
 router.post("/forgot-password/send-otp", UserController.sendForgotPasswordOTP);
 router.post("/forgot-password/verify-otp", UserController.verifyForgotPasswordOTP);
 router.post("/forgot-password/reset", UserController.resetPassword);
+
+// cleanup temp session
+router.post("/cleanup-temp", UserController.cleanupTemp);
+// get temp register data (for web polling)
+router.get("/temp-register", UserController.getTempRegister);
 
 router.post('/change-phone/send-otp', authenticateToken, UserController.changePhoneSendOTP);
 router.post('/change-phone/verify', authenticateToken, UserController.changePhoneVerify);
