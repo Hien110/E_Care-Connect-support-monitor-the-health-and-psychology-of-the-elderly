@@ -16,6 +16,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import userService from '../../services/userService';
+import socketService from '../../services/socketService';
 
 const PRIMARY = '#0046FF';
 const PRIMARY_LIGHT = '#2F66FF';
@@ -123,6 +124,8 @@ const PersonalInfoScreen = ({ navigation }) => {
   // Logout
   const onLogout = useCallback(async () => {
     try {
+      // Disconnect socket trước
+      socketService.disconnect();
       await userService.logout?.();
       await AsyncStorage.multiRemove(['ecare_token', 'ecare_user', AVATAR_STAMP_KEY]);
     } finally {

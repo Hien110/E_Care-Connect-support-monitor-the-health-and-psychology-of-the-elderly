@@ -23,6 +23,8 @@ import FindPeopleScreen from '../screens/Connect-family/FindPeopleScreen';
 import FamilyConnectionScreen from '../screens/Connect-family/FamilyConnectionScreen';
 import FamilyConnectionListScreen from '../screens/Connect-family/FamilyConnectionListScreen';
 import FamilyList_FamilyScreen from '../screens/Connect-family/FamilyList_FamilyScreen';
+import MessagesListScreen from '../screens/Messages/MessagesListScreen';
+import ChatScreen from '../screens/Messages/ChatScreen.jsx';
 
 // HOC footer
 import withFooter from '../components/withFooter';
@@ -125,22 +127,32 @@ const AppNavigator = () => {
         />
         <Stack.Screen
           name="FindPeople"
-          component={FindPeopleScreen}
+          component={withFooter(FindPeopleScreen, 'me')}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="FamilyConnection"
-          component={FamilyConnectionScreen}
+          component={withFooter(FamilyConnectionScreen, 'me')}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="FamilyConnectionList"
-          component={FamilyConnectionListScreen}
+          component={withFooter(FamilyConnectionListScreen, 'me')}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="FamilyList_Family"
-          component={FamilyList_FamilyScreen}
+          component={withFooter(FamilyList_FamilyScreen, 'me')}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MessagesList"
+          component={withFooter(MessagesListScreen, 'me')}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Chat"
+          component={ChatScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

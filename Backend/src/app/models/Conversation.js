@@ -8,8 +8,6 @@ const conversationSchema = new mongoose.Schema({
       required: true
     }
   }],
-  title: String,
-  description: String,
   // Cài đặt chat
   settings: {
     allowEmojis: {
