@@ -147,7 +147,7 @@ const AppNavigator = () => {
         />
         <Stack.Screen
           name="MessagesList"
-          component={withFooter(MessagesListScreen, 'me')}
+          component={withFooter(MessagesListScreen, 'messages')}
           options={{ headerShown: false }}
         />
         <Stack.Screen

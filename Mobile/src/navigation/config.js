@@ -38,7 +38,7 @@ export const routeMap = {
   homeSupporter: 'SupporterHome',
   mood: 'MOOD',
   plan: 'PLAN',
-  messages: 'MESSAGES',
+  messages: 'MessagesList',
   me: 'PersonalInfo',
   dashboard: 'FamilyDashboard',
   alerts: 'ALERTS',
