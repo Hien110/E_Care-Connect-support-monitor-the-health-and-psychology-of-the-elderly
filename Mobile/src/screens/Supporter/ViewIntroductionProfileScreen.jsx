@@ -10,6 +10,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -35,12 +36,40 @@ const ViewIntroductionProfile = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [profile, setProfile] = useState(null);
 
+  // --- Bank card local form state ---
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardHolderName, setCardHolderName] = useState('');
+  const [expiryMonth, setExpiryMonth] = useState('');
+  const [expiryYear, setExpiryYear] = useState('');
+  const [savingCard, setSavingCard] = useState(false);
+
+  // Helpers
+  const maskCard = (num = '') => {
+    const clean = String(num).replace(/\D/g, '');
+    if (!clean) return 'Chưa có thông tin';
+    const tail = clean.slice(-4).padStart(4, '*');
+    return `**** **** **** ${tail}`;
+  };
+
+  const hydrateBankForm = (p) => {
+    const bc = p?.bankCard || {};
+    setCardNumber(bc.cardNumber ? String(bc.cardNumber) : '');
+    setCardHolderName(bc.cardHolderName || '');
+    setExpiryMonth(bc.expiryMonth ? String(bc.expiryMonth) : '');
+    setExpiryYear(bc.expiryYear ? String(bc.expiryYear) : '');
+  };
+
+  // ----- Fetch profile -----
   const fetchProfile = async (isRefresh = false) => {
     try {
       if (!isRefresh) setLoading(true);
       const res = await supporterService.getMyProfile();
-      if (res.success) setProfile(res.data);
-      else Alert.alert('Lỗi', res.message || 'Không tải được hồ sơ.');
+      if (res.success) {
+        setProfile(res.data);
+        hydrateBankForm(res.data);
+      } else {
+        Alert.alert('Lỗi', res.message || 'Không tải được hồ sơ.');
+      }
     } catch (e) {
       Alert.alert('Lỗi', e?.message || 'Không tải được hồ sơ.');
     } finally {
@@ -49,32 +78,21 @@ const ViewIntroductionProfile = ({ navigation }) => {
     }
   };
 
-  // Lần đầu mount
   useEffect(() => { fetchProfile(false); }, []);
-
-  // Tự refetch mỗi khi màn hình được focus (đi từ Edit quay lại)
-  useFocusEffect(
-    useCallback(() => {
-      // tránh giật khung: dùng refresh nhẹ
-      fetchProfile(true);
-    }, [])
-  );
-
-  // Cho phép kéo xuống để làm mới
+  useFocusEffect(useCallback(() => { fetchProfile(true); }, []));
   const onRefresh = () => { setRefreshing(true); fetchProfile(true); };
 
-  // Gom lịch theo ngày -> [{dayNumber, slots: ['morning','evening']}]
+  // --- Schedule transforms ---
   const scheduleByDay = useMemo(() => {
     const map = {};
     (profile?.schedule || []).forEach((s) => {
       const d = s.dayOfWeek; // 2..8
       if (!map[d]) map[d] = new Set();
-      map[d].add(s.timeSlots); // 'morning'|'afternoon'|'evening'
+      map[d].add(s.timeSlots);
     });
     return DAY_ORDER.map((d) => ({ dayNumber: d, slots: Array.from(map[d] || []) }));
   }, [profile]);
 
-  // Ca của "ngày hiện tại"
   const todaySlots = useMemo(() => {
     const jsDay = new Date().getDay(); // 0..6
     const dayNumber = jsDay === 0 ? 8 : jsDay + 1;
@@ -86,6 +104,57 @@ const ViewIntroductionProfile = ({ navigation }) => {
     Array.from({ length: 5 }, (_, i) => (
       <Icon key={i} name={i < rating ? 'star' : 'star-outline'} size={14} color="#FFD700" />
     ));
+
+  // --- Bank card validations ---
+  const validateBankCard = () => {
+    const now = new Date();
+    const y = Number(String(expiryYear).replace(/\D/g, ''));
+    const m = Number(String(expiryMonth).replace(/\D/g, ''));
+    const numberClean = String(cardNumber).replace(/\s+/g, '').replace(/-/g, '');
+
+    if (!/^\d{12,19}$/.test(numberClean)) {
+      Alert.alert('Thẻ không hợp lệ', 'Số thẻ phải gồm 12–19 chữ số.');
+      return false;
+    }
+    if (!cardHolderName.trim()) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên chủ thẻ.');
+      return false;
+    }
+    if (!(m >= 1 && m <= 12)) {
+      Alert.alert('Tháng hết hạn không hợp lệ', 'Tháng phải từ 1 đến 12.');
+      return false;
+    }
+    if (!(y >= now.getFullYear())) {
+      Alert.alert('Năm hết hạn không hợp lệ', `Năm phải từ ${now.getFullYear()} trở đi.`);
+      return false;
+    }
+    if (y === now.getFullYear() && m < (now.getMonth() + 1)) {
+      Alert.alert('Thời hạn không hợp lệ', 'Thẻ đã hết hạn.');
+      return false;
+    }
+    return { cardNumber: numberClean, cardHolderName: cardHolderName.trim(), expiryMonth: m, expiryYear: y };
+  };
+
+  const onSaveBankCard = async () => {
+    const payload = validateBankCard();
+    if (!payload) return;
+
+    try {
+      setSavingCard(true);
+      const res = await supporterService.updateMyProfile({ bankCard: payload });
+      setSavingCard(false);
+      if (res?.success) {
+        setProfile(res.data);
+        hydrateBankForm(res.data);
+        Alert.alert('Thành công', 'Đã lưu thẻ ngân hàng.');
+      } else {
+        Alert.alert('Không thành công', res?.message || 'Không thể lưu thẻ.');
+      }
+    } catch (e) {
+      setSavingCard(false);
+      Alert.alert('Lỗi', e?.message || 'Không thể lưu thẻ.');
+    }
+  };
 
   if (loading) {
     return (
@@ -110,6 +179,12 @@ const ViewIntroductionProfile = ({ navigation }) => {
       ? profile.ratings.average
       : (reviews.reduce((s, r) => s + (r.rating || 0), 0) / (reviews.length || 1)) || 0;
 
+  const bankCardPreview = {
+    bankName: profile?.bankCard?.bankName || '', // nếu sau này bạn thêm bankName
+    holder: cardHolderName || profile?.bankCard?.cardHolderName || '',
+    masked: maskCard(cardNumber || profile?.bankCard?.cardNumber),
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#4A90E2" />
@@ -128,7 +203,7 @@ const ViewIntroductionProfile = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Profile Section */}
+        {/* Profile */}
         <View style={styles.profileSection}>
           <View style={styles.profileHeader}>
             <Image source={{ uri: avatar }} style={styles.profileImage} />
@@ -136,13 +211,13 @@ const ViewIntroductionProfile = ({ navigation }) => {
               <Text style={styles.profileName}>{fullName}</Text>
               <Text style={styles.profileRole}>Supporter • {years || 0} năm kinh nghiệm</Text>
               <View style={styles.verifiedBadge}>
-                <Icon name="checkmark-circle" size={16} color="#4CAF50" />
+                <Icon name="checkmark-circle" size={16} color="#0046FF" />
                 <Text style={styles.verifiedText}>Đã xác minh</Text>
               </View>
             </View>
           </View>
 
-          {/* Stats (demo) */}
+          {/* Stats */}
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{profile?.stats?.completedJobs ?? 0}</Text>
@@ -167,7 +242,7 @@ const ViewIntroductionProfile = ({ navigation }) => {
         </View>
 
         {/* Work Schedule */}
-        <View style={styles.section}>
+        <View className="section" style={styles.section}>
           <Text style={styles.sectionTitle}>Lịch làm việc</Text>
           <Text style={styles.subTitle}>Lịch tuần</Text>
 
@@ -181,7 +256,10 @@ const ViewIntroductionProfile = ({ navigation }) => {
                     <Text style={styles.timeText}>{slots.map((s) => SLOT_SHORT[s]).join(', ')}</Text>
                   </>
                 ) : (
-                  <Text style={styles.unavailableText}>Nghỉ</Text>
+                  <>
+                    <View style={styles.unavailableDot} />
+                    <Text style={styles.unavailableText}>Nghỉ</Text>
+                  </>
                 )}
               </View>
             </View>
@@ -194,9 +272,15 @@ const ViewIntroductionProfile = ({ navigation }) => {
             {['morning', 'afternoon', 'evening'].map((slotKey) => {
               const hasToday = todaySlots.has(slotKey);
               return (
-                <View key={slotKey} style={styles.shiftButton}>
+                <View
+                  key={slotKey}
+                  style={[
+                    styles.shiftButton,
+                    { borderColor: hasToday ? '#FF5722' : '#0046FF', backgroundColor: '#ffffff' },
+                  ]}
+                >
                   <Text style={styles.shiftText}>{SLOT_LABEL[slotKey]}</Text>
-                  <Text style={[styles.shiftStatus, { color: hasToday ? '#FF5722' : '#4CAF50' }]}>
+                  <Text style={[styles.shiftStatus, { color: hasToday ? '#FF5722' : '#0046FF' }]}>
                     {hasToday ? 'Đã có lịch' : 'Có thể nhận'}
                   </Text>
                 </View>
@@ -205,7 +289,7 @@ const ViewIntroductionProfile = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Services and Pricing — demo tĩnh */}
+        {/* Services */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Phạm vi & Dịch vụ</Text>
           <Text style={styles.subTitle}>Khu vực hoạt động: {serviceAreaKm} km</Text>
@@ -235,6 +319,80 @@ const ViewIntroductionProfile = ({ navigation }) => {
             </Text>
           </View>
         </View>
+
+        {/* ================== BANK CARD SETTINGS (NEW) ================== */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Thẻ ngân hàng</Text>
+
+          {/* Preview card */}
+          <View style={styles.bankCard}>
+            <View style={styles.bankInfo}>
+              <Icon name="card" size={22} color="#2F66FF" />
+              <View style={styles.bankDetails}>
+                <Text style={styles.bankName}>{bankCardPreview.bankName || 'Ngân hàng'}</Text>
+                <Text style={styles.cardNumber}>{bankCardPreview.masked}</Text>
+                <Text style={styles.cardHolder}>
+                  {bankCardPreview.holder || 'Chưa có thông tin'}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Form inputs */}
+          <Text style={styles.inputLabel}>Số thẻ (12–19 số)</Text>
+          <TextInput
+            value={cardNumber}
+            onChangeText={(t) => setCardNumber(t.replace(/\D/g, '').slice(0, 19))}
+            keyboardType="number-pad"
+            placeholder="VD: 9704xxxxxxxxxxxx"
+            placeholderTextColor="#9AA6B2"
+            style={styles.textInput}
+          />
+
+          <Text style={styles.inputLabel}>Tên chủ thẻ</Text>
+          <TextInput
+            value={cardHolderName}
+            onChangeText={(t) => setCardHolderName(t.toUpperCase())}
+            placeholder="VD: NGUYEN VAN A"
+            placeholderTextColor="#9AA6B2"
+            autoCapitalize="characters"
+            style={styles.textInput}
+          />
+
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Tháng hết hạn</Text>
+              <TextInput
+                value={expiryMonth}
+                onChangeText={(t) => setExpiryMonth(t.replace(/\D/g, '').slice(0, 2))}
+                keyboardType="number-pad"
+                placeholder="MM"
+                placeholderTextColor="#9AA6B2"
+                style={styles.textInput}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Năm hết hạn</Text>
+              <TextInput
+                value={expiryYear}
+                onChangeText={(t) => setExpiryYear(t.replace(/\D/g, '').slice(0, 4))}
+                keyboardType="number-pad"
+                placeholder="YYYY"
+                placeholderTextColor="#9AA6B2"
+                style={styles.textInput}
+              />
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.saveBankBtn, savingCard && { opacity: 0.6 }]}
+            onPress={onSaveBankCard}
+            disabled={savingCard}
+          >
+            {savingCard ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBankText}>Lưu thẻ ngân hàng</Text>}
+          </TouchableOpacity>
+        </View>
+        {/* ================== END BANK CARD SETTINGS ================== */}
 
         {/* Reviews */}
         <View style={styles.section}>
@@ -267,7 +425,6 @@ const ViewIntroductionProfile = ({ navigation }) => {
                   })}
                 </View>
               </View>
-
               <Text style={styles.reviewsTitle}>Đánh giá gần đây</Text>
               {reviews.slice(0, 5).map((review, index) => (
                 <View key={index} style={styles.reviewItem}>
@@ -289,27 +446,18 @@ const ViewIntroductionProfile = ({ navigation }) => {
           )}
         </View>
 
-        {/* Action Buttons */}
+        {/* Edit button only (đã xoá nút “Cài đặt & Lịch sử”) */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.editButton}
             onPress={() =>
               navigation?.navigate?.('EditIntroduction', {
                 initialProfile: profile,
-                // Callback: Edit gọi lại để cập nhật ngay lập tức UI hiện tại
-                onUpdated: (updatedProfile) => {
-                  if (updatedProfile) setProfile(updatedProfile);
-                },
+                onUpdated: (updatedProfile) => { if (updatedProfile) setProfile(updatedProfile); },
               })
             }
           >
             <Text style={styles.editButtonText}>Chỉnh sửa hồ sơ</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.bookButton}
-            onPress={() => Alert.alert('Thông báo', 'Tính năng đặt dịch vụ đang phát triển.')}
-          >
-            <Text style={styles.bookButtonText}>Cài đặt & Lịch sử</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -335,7 +483,7 @@ const styles = StyleSheet.create({
   profileName: { fontSize: 18, fontWeight: '600', color: '#000000', marginBottom: 4 },
   profileRole: { fontSize: 14, color: '#666666', marginBottom: 4 },
   verifiedBadge: { flexDirection: 'row', alignItems: 'center' },
-  verifiedText: { fontSize: 12, color: '#4CAF50', marginLeft: 4 },
+  verifiedText: { fontSize: 12, color: '#0046FF', marginLeft: 4 },
 
   statsContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   statItem: { alignItems: 'center', flex: 1 },
@@ -352,19 +500,23 @@ const styles = StyleSheet.create({
   tag: { backgroundColor: '#FF6B35', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   tagText: { fontSize: 12, color: '#ffffff', fontWeight: '500' },
 
+  // Weekly schedule item with border
   scheduleItem: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 14, paddingHorizontal: 14, borderWidth: 1, borderColor: '#E3E8EF',
+    borderRadius: 12, backgroundColor: '#FFFFFF', marginBottom: 10,
   },
-  dayText: { fontSize: 14, color: '#000000', fontWeight: '500' },
+  dayText: { fontSize: 14, color: '#0B1220', fontWeight: '700' },
   timeContainer: { flexDirection: 'row', alignItems: 'center' },
-  availableDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50', marginRight: 8 },
-  timeText: { fontSize: 14, color: '#000000' },
-  unavailableText: { fontSize: 14, color: '#999999' },
+  availableDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#0046FF', marginRight: 8 },
+  unavailableDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#9AA6B2', marginRight: 8 },
+  timeText: { fontSize: 14, color: '#0B1220' },
+  unavailableText: { fontSize: 14, color: '#9AA6B2' },
   nextAvailable: { fontSize: 12, color: '#666666', marginTop: 8, marginBottom: 16 },
 
-  // Shift cards
+  // Shift cards (today)
   shiftContainer: { gap: 8 },
-  shiftButton: { borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, padding: 12, backgroundColor: '#ffffff' },
+  shiftButton: { borderWidth: 3, borderColor: '#E0E0E0', borderRadius: 8, padding: 12, backgroundColor: '#ffffff' },
   shiftText: { fontSize: 14, color: '#000000', fontWeight: '500' },
   shiftStatus: { fontSize: 12, marginTop: 4 },
 
@@ -409,8 +561,34 @@ const styles = StyleSheet.create({
   actionButtons: { padding: 16, gap: 12 },
   editButton: { backgroundColor: '#2F66FF', paddingVertical: 16, borderRadius: 8, alignItems: 'center' },
   editButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-  bookButton: { backgroundColor: '#FF8040', paddingVertical: 16, borderRadius: 8, alignItems: 'center' },
-  bookButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
+
+  // --- Bank card styles ---
+  bankCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    marginBottom: 12,
+  },
+  bankInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  bankDetails: { marginLeft: 12 },
+  bankName: { fontSize: 16, fontWeight: '600', color: '#000000', marginBottom: 2 },
+  cardNumber: { fontSize: 14, color: '#666666', marginBottom: 2 },
+  cardHolder: { fontSize: 12, color: '#999999' },
+  inputLabel: { fontSize: 13, color: '#0B1220', marginBottom: 6, fontWeight: '500' },
+  textInput: {
+    borderWidth: 1, borderColor: '#E0E6EF', borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, color: '#000', backgroundColor: '#fff',
+    marginBottom: 12,
+  },
+  saveBankBtn: {
+    backgroundColor: '#FF8040', paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginTop: 4,
+  },
+  saveBankText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });
 
 export default ViewIntroductionProfile;

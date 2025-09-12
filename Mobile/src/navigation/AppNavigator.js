@@ -161,22 +161,22 @@ const AppNavigator = () => {
         />
         <Stack.Screen
           name="CreateIntroduction"
-          component={CreateIntroductionScreen}
+          component={withFooter(CreateIntroductionScreen, 'tasks')}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="ViewIntroduction"
-          component={ViewIntroductionScreen}
+          component={withFooter(ViewIntroductionScreen, 'tasks')}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="SupporterIntro"
-          component={SupporterIntroGate}
+          component={withFooter(SupporterIntroGate, 'tasks')}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="EditIntroduction"
-          component={EditIntroductionScreen}
+          component={withFooter(EditIntroductionScreen, 'tasks')}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

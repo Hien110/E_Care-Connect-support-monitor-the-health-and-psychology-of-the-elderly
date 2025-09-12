@@ -31,9 +31,9 @@ const AVATAR_FALLBACK =
 
 const EditIntroductionProfileScreen = ({ navigation, route }) => {
   // form state
-  const [years, setYears] = useState('0');
+  const [years, setYears] = useState('');
   const [jobDescription, setJobDescription] = useState('');
-  const [serviceArea, setServiceArea] = useState('10');
+  const [serviceArea, setServiceArea] = useState('');
 
   // lịch
   const [selectedShifts, setSelectedShifts] = useState(
@@ -58,11 +58,9 @@ const EditIntroductionProfileScreen = ({ navigation, route }) => {
     const expYears = `${Math.max(0, Number(data?.experience?.totalYears ?? 0))}`;
     setYears(expYears);
     setJobDescription(data?.experience?.description ?? '');
-
     const area = `${Math.max(0, Number(data?.serviceArea ?? 10))}`;
     setServiceArea(area);
 
-    // map schedule -> selectedShifts
     const next = DAYS.reduce((acc, d) => ({ ...acc, [d]: [] }), {});
     (data?.schedule || []).forEach((s) => {
       const dayLabel = NUM_TO_DAY[s.dayOfWeek];
@@ -124,26 +122,60 @@ const EditIntroductionProfileScreen = ({ navigation, route }) => {
     return out;
   };
 
-  // ===== Save =====
-  const onSave = async () => {
+  // ===== Validate helpers =====
+  const countSelectedSlots = () =>
+    DAYS.reduce((sum, d) => sum + (selectedShifts[d]?.length || 0), 0);
+
+  const ensureValid = () => {
+    if (
+      years.trim() === '' &&
+      serviceArea.trim() === '' &&
+      jobDescription.trim() === '' &&
+      countSelectedSlots() === 0
+    ) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập ít nhất một thông tin và/hoặc chọn ca làm việc.');
+      return false;
+    }
+
+    if (years.trim() === '') {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập số năm kinh nghiệm.');
+      return false;
+    }
     const y = Number(years);
     if (!Number.isFinite(y) || y < 0 || y > 60) {
       Alert.alert('Không hợp lệ', 'Số năm kinh nghiệm phải từ 0 đến 60.');
-      return;
+      return false;
+    }
+
+    if (jobDescription.trim() === '') {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập mô tả công việc.');
+      return false;
+    }
+
+    if (serviceArea.trim() === '') {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập bán kính phục vụ.');
+      return false;
     }
     const areaNum = Number(serviceArea);
     if (!Number.isFinite(areaNum) || areaNum < 0 || areaNum > 50) {
       Alert.alert('Không hợp lệ', 'Bán kính phục vụ tối đa 50 km.');
-      return;
-    }
-    if (!jobDescription.trim()) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng nhập mô tả công việc.');
-      return;
+      return false;
     }
 
+    if (countSelectedSlots() === 0) {
+      Alert.alert('Thiếu lịch làm việc', 'Vui lòng chọn ít nhất một ca làm việc trong tuần.');
+      return false;
+    }
+    return true;
+  };
+
+  // ===== Save =====
+  const onSave = async () => {
+    if (!ensureValid()) return;
+
     const payload = {
-      experience: { totalYears: y, description: jobDescription.trim() },
-      serviceArea: Math.round(Math.min(Math.max(areaNum, 0), 50)),
+      experience: { totalYears: Number(years), description: jobDescription.trim() },
+      serviceArea: Math.round(Math.min(Math.max(Number(serviceArea), 0), 50)),
       schedule: buildSchedulePayload(),
     };
 
@@ -153,7 +185,6 @@ const EditIntroductionProfileScreen = ({ navigation, route }) => {
       setSaving(false);
 
       if (res?.success) {
-        // cập nhật UI ngay ở màn View nếu có truyền onUpdated
         route?.params?.onUpdated?.(res.data);
 
         const userName = res?.data?.user?.fullName || 'Supporter';
@@ -232,9 +263,7 @@ const EditIntroductionProfileScreen = ({ navigation, route }) => {
           </View>
 
           <Text style={styles.successTitle}>Cập nhật hồ sơ thành công!</Text>
-          <Text style={styles.successSub}>
-            Thông tin hồ sơ của bạn đã được cập nhật. Khách hàng sẽ thấy nội dung mới ngay bây giờ.
-          </Text>
+          <Text style={styles.successSub}>Thông tin hồ sơ của bạn đã được cập nhật.</Text>
 
           <View style={styles.miniCard}>
             <Image source={{ uri: profileInfo.avatar || AVATAR_FALLBACK }} style={styles.miniAvatarImg} />
@@ -250,7 +279,7 @@ const EditIntroductionProfileScreen = ({ navigation, route }) => {
             style={styles.primaryBtn}
             onPress={() => {
               setShowSuccess(false);
-              navigation?.goBack?.(); // quay về ViewIntroductionProfile
+              navigation?.goBack?.();
             }}
           >
             <Text style={styles.primaryBtnText}>Quay về</Text>
@@ -335,20 +364,20 @@ const EditIntroductionProfileScreen = ({ navigation, route }) => {
           <Text style={styles.sectionTitle}>Lịch làm việc</Text>
 
           {DAYS.map((day) => (
-            <TouchableOpacity key={day} style={styles.dayRow} onPress={() => openShiftModal(day)}>
-              <Text style={styles.dayText}>{day}</Text>
-              <View style={styles.shiftRight}>
+            <TouchableOpacity key={day} style={styles.dayCard} onPress={() => openShiftModal(day)} activeOpacity={0.9}>
+              <View style={styles.dayLeft}>
+                <Text style={styles.dayTitle}>{day}</Text>
                 <Text
                   style={[
-                    styles.shiftShort,
+                    styles.daySub,
                     !(selectedShifts[day] || []).length && styles.placeholderText,
                   ]}
                   numberOfLines={1}
                 >
                   {renderDaySelectedShort(day)}
                 </Text>
-                <Icon name="chevron-down" size={20} color="#CCCCCC" />
               </View>
+              <Icon name="chevron-down" size={20} color="#0B1220" />
             </TouchableOpacity>
           ))}
 
@@ -418,14 +447,23 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '600', color: '#0B1220' },
   role: { fontSize: 13, color: '#6B7280', marginTop: 2 },
 
-  dayRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0',
+  /*** Thẻ ngày có viền như ảnh mẫu ***/
+  dayCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#E3E8EF',     // màu viền nhạt
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 10,
   },
-  dayText: { fontSize: 14, color: '#000', fontWeight: '500' },
-  shiftRight: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'flex-end' },
-  shiftShort: { fontSize: 14, color: '#000', marginRight: 8 },
-  placeholderText: { color: '#CCC' },
+  dayLeft: { flex: 1, paddingRight: 10 },
+  dayTitle: { fontSize: 16, color: '#0B1220', fontWeight: '700', marginBottom: 4 },
+  daySub: { fontSize: 14, color: '#0B1220' },
+  placeholderText: { color: '#9AA6B2' }, // màu xám nhạt cho "Chọn ca làm việc"
 
   noteBox: { flexDirection: 'row', backgroundColor: '#F5F5F5', padding: 12, borderRadius: 8, marginTop: 12 },
   noteText: { fontSize: 12, color: '#666', marginLeft: 8, flex: 1, lineHeight: 16 },
@@ -460,7 +498,7 @@ const styles = StyleSheet.create({
   btnPrimary: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 10, backgroundColor: '#2F66FF' },
   btnPrimaryText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
-  // Success popup styles
+  // Success popup
   successOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20,
   },

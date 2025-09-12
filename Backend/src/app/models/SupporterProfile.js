@@ -47,6 +47,29 @@ const supporterProfileSchema = new mongoose.Schema(
       },
       lastRatingAt: Date,
     },
+    bankCard: {
+      cardNumber: {
+        type: String,
+        required: true,
+        match: /^\d{12,19}$/, 
+      },
+      cardHolderName: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      expiryMonth: {
+        type: Number,
+        min: 1,
+        max: 12,
+        required: true,
+      },
+      expiryYear: {
+        type: Number,
+        min: new Date().getFullYear(),
+        required: true,
+      },
+    },
   },
   {
     timestamps: true,
