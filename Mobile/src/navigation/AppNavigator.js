@@ -25,6 +25,10 @@ import FamilyConnectionListScreen from '../screens/Connect-family/FamilyConnecti
 import FamilyList_FamilyScreen from '../screens/Connect-family/FamilyList_FamilyScreen';
 import MessagesListScreen from '../screens/Messages/MessagesListScreen';
 import ChatScreen from '../screens/Messages/ChatScreen.jsx';
+import CreateIntroductionScreen from '../screens/Supporter/CreateIntroductionProfileScreen.jsx';
+import ViewIntroductionScreen from '../screens/Supporter/ViewIntroductionProfileScreen.jsx';
+import SupporterIntroGate from '../screens/Supporter/SupporterIntroGate.jsx';
+import EditIntroductionScreen from '../screens/Supporter/EditIntroductionProfileScreen.jsx';
 
 // HOC footer
 import withFooter from '../components/withFooter';
@@ -153,6 +157,26 @@ const AppNavigator = () => {
         <Stack.Screen
           name="Chat"
           component={ChatScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="CreateIntroduction"
+          component={withFooter(CreateIntroductionScreen, 'tasks')}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ViewIntroduction"
+          component={withFooter(ViewIntroductionScreen, 'tasks')}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="SupporterIntro"
+          component={withFooter(SupporterIntroGate, 'tasks')}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EditIntroduction"
+          component={withFooter(EditIntroductionScreen, 'tasks')}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
